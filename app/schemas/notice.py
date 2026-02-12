@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from datetime import DateTime
+from datetime import datetime
 
 class NoticeBase(BaseModel):
     title: str = Field(..., description="공지사항 제목")
@@ -10,7 +10,7 @@ class NoticeCreate(NoticeBase):
 
 class Notice(NoticeBase):
     id: str
-    created_at: DateTime
+    created_at: datetime
 
     class Config:
         from_attributes = True

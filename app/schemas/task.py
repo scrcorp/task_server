@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from datetime import DateTime
+from datetime import datetime
 from app.models.enums import TaskType, Priority, TaskStatus
 
 # --- 체크리스트 (Checklist) 스키마 ---
@@ -30,7 +30,7 @@ class CommentCreate(CommentBase):
 class Comment(CommentBase):
     id: str
     user_id: str
-    created_at: DateTime
+    created_at: datetime
     
     class Config:
         from_attributes = True
@@ -43,7 +43,7 @@ class TaskBase(BaseModel):
     type: TaskType = Field(..., description="업무 유형 (daily/assigned)")
     priority: Priority = Field(Priority.NORMAL, description="우선순위")
     status: TaskStatus = Field(TaskStatus.TODO, description="진행 상태")
-    due_date: Optional[DateTime] = Field(None, description="마감 기한")
+    due_date: Optional[datetime] = Field(None, description="마감 기한")
     assigned_to: Optional[str] = Field(None, description="담당자 ID")
 
 class TaskCreate(TaskBase):
@@ -57,7 +57,7 @@ class TaskUpdate(BaseModel):
 
 class Task(TaskBase):
     id: str
-    created_at: DateTime
+    created_at: datetime
     checklist: Optional[List[ChecklistItem]] = []
     comments: Optional[List[Comment]] = []
 
