@@ -1,0 +1,28 @@
+{
+  "version": "2.0",
+  "lastUpdated": "2026-02-12T05:20:00.000Z",
+  "activeFeatures": [
+    "task-server-api"
+  ],
+  "primaryFeature": "task-server-api",
+  "features": {
+    "task-server-api": {
+      "phase": "do",
+      "status": "completed",
+      "progress": 100,
+      "startedAt": "2026-02-12T04:55:00.000Z"
+    }
+  },
+  "pipeline": {
+    "currentPhase": 1,
+    "level": "Dynamic",
+    "phaseHistory": []
+  },
+  "session": {
+    "startedAt": "2026-02-12T04:44:59.243Z",
+    "onboardingCompleted": true,
+    "lastActivity": "2026-02-12T05:20:00.000Z"
+  },
+  "_snapshotTimestamp": "2026-02-12T05:08:32.224Z",
+  "_reason": "pre-compress"
+}
