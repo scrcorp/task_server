@@ -38,7 +38,11 @@ cp .env.example .env
 
 ### 4. 서버 실행
 ```bash
+# 로컬 테스트
 uvicorn app.main:app --reload
+
+# 배포 환경 (Render 등)
+uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
 ## 📖 API 문서 확인
