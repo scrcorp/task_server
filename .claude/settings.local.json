@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(flutter analyze:*)"
+      "Bash(flutter analyze:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(.venv/bin/pip install:*)"
     ]
   }
 }

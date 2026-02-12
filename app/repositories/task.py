@@ -36,9 +36,17 @@ class TaskRepository(IRepository[Task]):
         return True
 
     # Checklist specific
+    async def create_checklist_item(self, data: dict) -> dict:
+        res = supabase.table("checklist_items").insert(data).execute()
+        return res.data[0]
+
     async def update_checklist_item(self, item_id: str, data: dict) -> dict:
         res = supabase.table("checklist_items").update(data).eq("id", item_id).execute()
         return res.data[0]
+
+    async def delete_checklist_item(self, item_id: str) -> bool:
+        supabase.table("checklist_items").delete().eq("id", item_id).execute()
+        return True
 
     async def create_checklist_log(self, log_data: dict) -> dict:
         res = supabase.table("checklist_logs").insert(log_data).execute()

@@ -24,6 +24,7 @@ class UserBase(BaseModel):
     branch_id: Optional[str] = None
     group_id: Optional[str] = None
     language: str = "ko"
+    profile_image: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
@@ -33,6 +34,8 @@ class UserUpdate(BaseModel):
     status: Optional[UserStatus] = None
     group_id: Optional[str] = None
     branch_id: Optional[str] = None
+    profile_image: Optional[str] = None
+    language: Optional[str] = None
 
 class User(UserBase):
     id: str

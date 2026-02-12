@@ -1,8 +1,8 @@
 {
-  "sessionCount": 4,
-  "platform": "gemini",
-  "level": "Starter",
-  "lastSessionStarted": "2026-02-12T07:57:35.056Z",
-  "outputStyle": null,
-  "lastSessionEnded": "2026-02-12T06:41:42.329Z"
+  "sessionCount": 2,
+  "lastSession": {
+    "startedAt": "2026-02-12T09:22:59.365Z",
+    "platform": "claude",
+    "level": "Dynamic"
+  }
 }

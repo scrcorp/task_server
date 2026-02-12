@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.endpoints import tasks, notices, auth, admin
+from app.api.endpoints import tasks, notices, auth, admin, users, dashboard, attendance, opinions, notifications, files
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -23,6 +23,12 @@ app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["Aut
 app.include_router(tasks.router, prefix=f"{settings.API_V1_STR}/tasks", tags=["Tasks"])
 app.include_router(notices.router, prefix=f"{settings.API_V1_STR}/notices", tags=["Notices"])
 app.include_router(admin.router, prefix=f"{settings.API_V1_STR}/admin", tags=["Admin"])
+app.include_router(users.router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"])
+app.include_router(dashboard.router, prefix=f"{settings.API_V1_STR}/dashboard", tags=["Dashboard"])
+app.include_router(attendance.router, prefix=f"{settings.API_V1_STR}/attendance", tags=["Attendance"])
+app.include_router(opinions.router, prefix=f"{settings.API_V1_STR}/opinions", tags=["Opinions"])
+app.include_router(notifications.router, prefix=f"{settings.API_V1_STR}/notifications", tags=["Notifications"])
+app.include_router(files.router, prefix=f"{settings.API_V1_STR}/files", tags=["Files"])
 
 @app.get("/")
 def root():

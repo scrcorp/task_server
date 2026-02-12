@@ -1,7 +1,26 @@
+from abc import ABC, abstractmethod
 from typing import List, Optional, Any
 from app.core.supabase import supabase
 
-class ChecklistTemplateRepository:
+
+class IChecklistTemplateRepository(ABC):
+    @abstractmethod
+    async def list_templates(self, brand_id: Optional[str] = None, group_id: Optional[str] = None) -> List[dict]: pass
+
+    @abstractmethod
+    async def get_template_by_id(self, id: str) -> Optional[dict]: pass
+
+    @abstractmethod
+    async def create_template(self, data: dict) -> dict: pass
+
+    @abstractmethod
+    async def update_template(self, id: str, data: dict) -> dict: pass
+
+    @abstractmethod
+    async def delete_template(self, id: str) -> bool: pass
+
+
+class ChecklistTemplateRepository(IChecklistTemplateRepository):
     async def list_templates(self, brand_id: Optional[str] = None, group_id: Optional[str] = None) -> List[dict]:
         query = supabase.table("checklist_templates").select("*, items:checklist_template_items(*)")
         if brand_id:

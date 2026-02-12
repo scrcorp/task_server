@@ -1,35 +1,635 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-02-12T05:30:00.000Z",
-  "activeFeatures": [],
-  "primaryFeature": null,
+  "lastUpdated": "2026-02-12T09:26:57.158Z",
+  "activeFeatures": [
+    "repositories",
+    "core",
+    "auth_service.py",
+    "endpoints",
+    "admin_service.py",
+    "schemas",
+    "comment_service.py",
+    "attendance_service.py",
+    "opinion_service.py",
+    "dashboard_service.py",
+    "notification_service.py",
+    "file_service.py",
+    "notice_service.py",
+    "task_service.py",
+    "task_server",
+    "user_service.py"
+  ],
+  "primaryFeature": "repositories",
   "features": {
-    "task-server-api": {
-      "phase": "report",
-      "status": "completed",
-      "progress": 100,
-      "startedAt": "2026-02-12T04:55:00.000Z",
-      "completedAt": "2026-02-12T05:30:00.000Z"
+    "repositories": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T09:05:02.328Z",
+        "lastUpdated": "2026-02-12T09:25:14.091Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/repositories/feedback_notice.py"
+    },
+    "core": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T09:05:11.429Z",
+        "lastUpdated": "2026-02-12T09:09:11.306Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/core/dependencies.py"
+    },
+    "auth_service.py": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T09:05:30.307Z",
+        "lastUpdated": "2026-02-12T09:05:30.307Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/services/auth_service.py"
+    },
+    "endpoints": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T09:05:42.669Z",
+        "lastUpdated": "2026-02-12T09:10:01.366Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/api/endpoints/tasks.py"
+    },
+    "admin_service.py": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T09:05:56.864Z",
+        "lastUpdated": "2026-02-12T09:25:41.826Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/services/admin_service.py"
+    },
+    "schemas": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T09:07:42.922Z",
+        "lastUpdated": "2026-02-12T09:26:57.158Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/schemas/user.py"
+    },
+    "comment_service.py": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T09:08:05.288Z",
+        "lastUpdated": "2026-02-12T09:26:02.725Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/services/comment_service.py"
+    },
+    "attendance_service.py": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T09:08:12.652Z",
+        "lastUpdated": "2026-02-12T09:26:07.534Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/services/attendance_service.py"
+    },
+    "opinion_service.py": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T09:08:14.864Z",
+        "lastUpdated": "2026-02-12T09:26:11.661Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/services/opinion_service.py"
+    },
+    "dashboard_service.py": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T09:08:15.991Z",
+        "lastUpdated": "2026-02-12T09:26:32.476Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/services/dashboard_service.py"
+    },
+    "notification_service.py": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T09:08:18.072Z",
+        "lastUpdated": "2026-02-12T09:26:15.693Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/services/notification_service.py"
+    },
+    "file_service.py": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T09:08:21.018Z",
+        "lastUpdated": "2026-02-12T09:08:21.018Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/services/file_service.py"
+    },
+    "notice_service.py": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T09:08:23.579Z",
+        "lastUpdated": "2026-02-12T09:25:51.083Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/services/notice_service.py"
+    },
+    "task_service.py": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T09:08:47.360Z",
+        "lastUpdated": "2026-02-12T09:25:23.341Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/services/task_service.py"
+    },
+    "task_server": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T09:09:18.273Z",
+        "lastUpdated": "2026-02-12T09:24:21.740Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/models/enums.py"
+    },
+    "user_service.py": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T09:25:57.698Z",
+        "lastUpdated": "2026-02-12T09:25:57.698Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/services/user_service.py"
     }
   },
   "pipeline": {
-    "currentPhase": 9,
-    "level": "Starter",
-    "phaseHistory": [
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9
-    ]
+    "currentPhase": 1,
+    "level": "Dynamic",
+    "phaseHistory": []
   },
   "session": {
-    "startedAt": "2026-02-12T07:57:35.055Z",
-    "onboardingCompleted": true,
-    "lastActivity": "2026-02-12T07:57:35.055Z"
-  }
+    "startedAt": "2026-02-12T08:59:59.678Z",
+    "onboardingCompleted": false,
+    "lastActivity": "2026-02-12T09:26:57.158Z"
+  },
+  "history": [
+    {
+      "timestamp": "2026-02-12T09:05:02.328Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:05:11.429Z",
+      "feature": "core",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:05:20.607Z",
+      "feature": "core",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:05:30.307Z",
+      "feature": "auth_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:05:42.669Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:05:56.864Z",
+      "feature": "admin_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:06:14.512Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:06:19.752Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:06:24.989Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:07:42.922Z",
+      "feature": "schemas",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:07:44.034Z",
+      "feature": "schemas",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:07:46.928Z",
+      "feature": "schemas",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:07:55.809Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:07:58.480Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:00.621Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:03.384Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:05.288Z",
+      "feature": "comment_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:12.652Z",
+      "feature": "attendance_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:14.864Z",
+      "feature": "opinion_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:15.991Z",
+      "feature": "dashboard_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:18.072Z",
+      "feature": "notification_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:21.018Z",
+      "feature": "file_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:23.579Z",
+      "feature": "notice_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:27.683Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:29.846Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:32.566Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:39.328Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:39.881Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:41.631Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:46.745Z",
+      "feature": "core",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:47.360Z",
+      "feature": "task_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:48.885Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:08:49.474Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:09:03.269Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:09:07.254Z",
+      "feature": "core",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:09:11.306Z",
+      "feature": "core",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:09:18.273Z",
+      "feature": "task_server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:09:21.915Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:09:22.415Z",
+      "feature": "task_server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:09:38.352Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:10:01.366Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:10:04.242Z",
+      "feature": "task_server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:10:10.003Z",
+      "feature": "task_server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:24:21.740Z",
+      "feature": "task_server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:24:34.167Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:24:39.143Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:24:44.298Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:24:49.973Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:24:56.804Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:25:03.640Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:25:08.876Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:25:14.091Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:25:23.341Z",
+      "feature": "task_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:25:41.826Z",
+      "feature": "admin_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:25:51.083Z",
+      "feature": "notice_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:25:57.698Z",
+      "feature": "user_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:26:02.725Z",
+      "feature": "comment_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:26:07.534Z",
+      "feature": "attendance_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:26:11.661Z",
+      "feature": "opinion_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:26:15.693Z",
+      "feature": "notification_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:26:32.477Z",
+      "feature": "dashboard_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:26:38.387Z",
+      "feature": "schemas",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:26:47.070Z",
+      "feature": "schemas",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:26:52.471Z",
+      "feature": "schemas",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:26:57.158Z",
+      "feature": "schemas",
+      "phase": "do",
+      "action": "updated"
+    }
+  ]
 }

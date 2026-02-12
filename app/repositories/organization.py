@@ -1,9 +1,43 @@
+from abc import ABC, abstractmethod
 from typing import List, Optional, Any
 from app.repositories.base import IRepository
 from app.schemas.organization import Brand, Branch, Group
 from app.core.supabase import supabase
 
-class OrganizationRepository:
+
+class IOrganizationRepository(ABC):
+    @abstractmethod
+    async def list_brands(self) -> List[Brand]: pass
+
+    @abstractmethod
+    async def create_brand(self, data: dict) -> Brand: pass
+
+    @abstractmethod
+    async def update_brand(self, id: str, data: dict) -> Brand: pass
+
+    @abstractmethod
+    async def delete_brand(self, id: str) -> bool: pass
+
+    @abstractmethod
+    async def list_branches(self, brand_id: Optional[str] = None) -> List[Branch]: pass
+
+    @abstractmethod
+    async def create_branch(self, data: dict) -> Branch: pass
+
+    @abstractmethod
+    async def delete_branch(self, id: str) -> bool: pass
+
+    @abstractmethod
+    async def list_groups(self, branch_id: Optional[str] = None) -> List[Group]: pass
+
+    @abstractmethod
+    async def create_group(self, data: dict) -> Group: pass
+
+    @abstractmethod
+    async def delete_group(self, id: str) -> bool: pass
+
+
+class OrganizationRepository(IOrganizationRepository):
     """Handles Brands, Branches, and Groups."""
     
     # Brands
@@ -24,6 +58,10 @@ class OrganizationRepository:
         return True
 
     # Branches
+    async def delete_branch(self, id: str) -> bool:
+        supabase.table("branches").delete().eq("id", id).execute()
+        return True
+
     async def list_branches(self, brand_id: Optional[str] = None) -> List[Branch]:
         query = supabase.table("branches").select("*")
         if brand_id:
@@ -46,3 +84,7 @@ class OrganizationRepository:
     async def create_group(self, data: dict) -> Group:
         res = supabase.table("groups").insert(data).execute()
         return Group(**res.data[0])
+
+    async def delete_group(self, id: str) -> bool:
+        supabase.table("groups").delete().eq("id", id).execute()
+        return True

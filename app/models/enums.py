@@ -16,3 +16,24 @@ class TaskStatus(str, Enum):
     TODO = "todo"
     IN_PROGRESS = "in_progress"
     DONE = "done"
+
+class AttendanceStatus(str, Enum):
+    """출퇴근 상태"""
+    NOT_STARTED = "not_started"
+    ON_DUTY = "on_duty"
+    OFF_DUTY = "off_duty"
+    COMPLETED = "completed"
+
+class NotificationType(str, Enum):
+    """알림 유형"""
+    TASK_ASSIGNED = "task_assigned"
+    TASK_UPDATED = "task_updated"
+    NOTICE = "notice"
+    FEEDBACK = "feedback"
+    SYSTEM = "system"
+
+class OpinionStatus(str, Enum):
+    """건의사항 상태"""
+    SUBMITTED = "submitted"
+    REVIEWED = "reviewed"
+    RESOLVED = "resolved"

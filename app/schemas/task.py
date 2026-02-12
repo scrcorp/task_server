@@ -8,13 +8,15 @@ from app.models.enums import TaskType, Priority, TaskStatus
 class ChecklistItemBase(BaseModel):
     content: str = Field(..., description="체크리스트 내용")
     is_completed: bool = Field(False, description="완료 여부")
+    verification_type: str = Field("none", description="검증 유형 (none, photo, signature)")
+    verification_data: Optional[str] = Field(None, description="검증 데이터")
 
 class ChecklistItemCreate(ChecklistItemBase):
     task_id: str
 
 class ChecklistItem(ChecklistItemBase):
     id: str
-    
+
     class Config:
         from_attributes = True
 
@@ -30,8 +32,10 @@ class CommentCreate(CommentBase):
 class Comment(CommentBase):
     id: str
     user_id: str
+    user_name: Optional[str] = Field(None, description="작성자 이름")
+    is_manager: bool = Field(False, description="관리자 여부")
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
