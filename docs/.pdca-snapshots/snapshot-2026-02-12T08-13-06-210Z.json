@@ -14,7 +14,7 @@
   },
   "pipeline": {
     "currentPhase": 9,
-    "level": "Dynamic",
+    "level": "Starter",
     "phaseHistory": [
       1,
       2,
@@ -28,10 +28,10 @@
     ]
   },
   "session": {
-    "startedAt": "2026-02-12T04:44:59.243Z",
+    "startedAt": "2026-02-12T07:57:35.055Z",
     "onboardingCompleted": true,
-    "lastActivity": "2026-02-12T05:30:00.000Z"
+    "lastActivity": "2026-02-12T07:57:35.055Z"
   },
-  "_snapshotTimestamp": "2026-02-12T05:38:37.832Z",
+  "_snapshotTimestamp": "2026-02-12T08:13:06.211Z",
   "_reason": "pre-compress"
 }
