@@ -1,17 +1,17 @@
-from fastapi import APIRouter, HTTPException, Header, Depends
-from typing import Optional
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, EmailStr
 from app.services.auth_service import AuthService
 from app.core.dependencies import get_auth_service
-from app.schemas.user import UserCreate
+from app.core.security import get_current_user
+from app.schemas.user import User, UserCreate
 
 router = APIRouter()
 
 
-# ── Request Schemas ──────────────────────────────────
+# -- Request Schemas --
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    login_id: str
     password: str
 
 class SignupRequest(BaseModel):
@@ -19,21 +19,28 @@ class SignupRequest(BaseModel):
     login_id: str
     password: str
     full_name: str
-    branch_id: Optional[str] = None
-    language: str = "ko"
+    company_code: str
+    language: str = "en"
 
 class RefreshRequest(BaseModel):
     refresh_token: str
 
+class VerifyEmailRequest(BaseModel):
+    email: EmailStr
+    code: str
 
-# ── Endpoints ────────────────────────────────────────
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
+# -- Endpoints --
 
 @router.post("/login")
 async def login(body: LoginRequest, service: AuthService = Depends(get_auth_service)):
     try:
-        return await service.login(body.email, body.password)
+        return await service.login(body.login_id, body.password)
     except Exception:
-        raise HTTPException(status_code=401, detail="로그인에 실패했습니다. 이메일 또는 비밀번호를 확인하세요.")
+        raise HTTPException(status_code=401, detail="Invalid login ID or password.")
 
 
 @router.post("/signup", status_code=201)
@@ -44,25 +51,25 @@ async def signup(body: SignupRequest, service: AuthService = Depends(get_auth_se
             login_id=body.login_id,
             password=body.password,
             full_name=body.full_name,
-            branch_id=body.branch_id,
+            company_id="temp",
             language=body.language,
         )
-        return await service.signup(user_data)
+        return await service.signup(user_data, company_code=body.company_code)
     except Exception as e:
-        if "already" in str(e).lower() or "duplicate" in str(e).lower():
-            raise HTTPException(status_code=400, detail="이미 등록된 이메일입니다.")
-        raise HTTPException(status_code=400, detail="회원가입에 실패했습니다.")
+        msg = str(e)
+        if "already" in msg.lower() or "duplicate" in msg.lower() or "taken" in msg.lower():
+            raise HTTPException(status_code=400, detail=msg)
+        if "company code" in msg.lower():
+            raise HTTPException(status_code=400, detail=msg)
+        raise HTTPException(status_code=400, detail="Signup failed.")
 
 
 @router.post("/logout")
 async def logout(
-    authorization: Optional[str] = Header(None),
+    current_user: User = Depends(get_current_user),
     service: AuthService = Depends(get_auth_service),
 ):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="인증 토큰이 누락되었습니다.")
-    token = authorization.replace("Bearer ", "")
-    return await service.logout(token)
+    return await service.logout()
 
 
 @router.post("/refresh")
@@ -70,18 +77,41 @@ async def refresh(body: RefreshRequest, service: AuthService = Depends(get_auth_
     try:
         return await service.refresh(body.refresh_token)
     except Exception:
-        raise HTTPException(status_code=401, detail="토큰 갱신에 실패했습니다.")
+        raise HTTPException(status_code=401, detail="Token refresh failed.")
 
 
 @router.get("/me")
-async def get_me(
-    authorization: Optional[str] = Header(None),
+async def get_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
+@router.post("/verify-email")
+async def verify_email(
+    body: VerifyEmailRequest,
     service: AuthService = Depends(get_auth_service),
 ):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="인증 토큰이 누락되었습니다.")
-    token = authorization.replace("Bearer ", "")
     try:
-        return await service.get_current_auth_user(token)
-    except Exception:
-        raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다.")
+        return await service.verify_email(body.email, body.code)
+    except Exception as e:
+        msg = str(e)
+        if "too many" in msg.lower():
+            raise HTTPException(status_code=429, detail=msg)
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code.")
+
+
+@router.post("/resend-verification")
+async def resend_verification(
+    body: ResendVerificationRequest,
+    service: AuthService = Depends(get_auth_service),
+):
+    try:
+        return await service.resend_verification_email(body.email)
+    except Exception as e:
+        msg = str(e)
+        if "too many" in msg.lower():
+            raise HTTPException(status_code=429, detail=msg)
+        if "already verified" in msg.lower():
+            raise HTTPException(status_code=400, detail=msg)
+        if "no account" in msg.lower():
+            raise HTTPException(status_code=404, detail=msg)
+        raise HTTPException(status_code=500, detail="Failed to send verification email.")

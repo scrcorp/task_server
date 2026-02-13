@@ -1,57 +1,147 @@
-from typing import Optional
+import uuid
+import secrets
+from datetime import datetime, timedelta, timezone
+
 from app.repositories.auth import IAuthRepository
-from app.repositories.user import SupabaseUserRepository
+from app.repositories.organization import IOrganizationRepository
+from app.core.password import hash_password, verify_password
+from app.core.jwt import create_access_token, create_refresh_token, decode_token
+from app.core.email import send_verification_code
+from app.core.config import settings
 from app.schemas.user import UserCreate
 
 
+def _generate_otp() -> str:
+    """Generate a 6-digit numeric OTP code."""
+    return f"{secrets.randbelow(1_000_000):06d}"
+
+
 class AuthService:
-    def __init__(self, auth_repo: IAuthRepository, user_repo: SupabaseUserRepository):
+    def __init__(self, auth_repo: IAuthRepository, org_repo: IOrganizationRepository):
         self.auth_repo = auth_repo
-        self.user_repo = user_repo
+        self.org_repo = org_repo
 
-    async def login(self, email: str, password: str) -> dict:
-        return await self.auth_repo.sign_in(email, password)
-
-    async def signup(self, data: UserCreate) -> dict:
-        # 1. Create auth user
-        auth_result = await self.auth_repo.sign_up(
-            email=data.email,
-            password=data.password,
-            user_metadata={"full_name": data.full_name, "login_id": data.login_id},
-        )
-
-        # 2. Create user profile in DB
-        profile_data = {
-            "id": auth_result["id"],
-            "email": data.email,
-            "login_id": data.login_id,
-            "full_name": data.full_name,
-            "role": data.role.value,
-            "status": data.status.value,
-            "branch_id": data.branch_id,
-            "language": data.language,
-        }
-        await self.user_repo.create(profile_data)
-
+    async def login(self, login_id: str, password: str) -> dict:
+        user = await self.auth_repo.sign_in(login_id, password)
+        access_token = create_access_token(user["id"])
+        refresh_token = create_refresh_token(user["id"])
         return {
-            "message": "회원가입이 완료되었습니다.",
+            "access_token": access_token,
+            "refresh_token": refresh_token,
             "user": {
-                "id": auth_result["id"],
-                "email": data.email,
-                "full_name": data.full_name,
+                "id": user["id"],
+                "login_id": user["login_id"],
+                "email": user.get("email"),
+                "full_name": user.get("full_name"),
+                "role": user.get("role"),
+                "company_id": user.get("company_id"),
+                "email_verified": user.get("email_verified", False),
             },
         }
 
-    async def logout(self, token: str) -> dict:
-        await self.auth_repo.sign_out(token)
-        return {"message": "로그아웃되었습니다."}
+    async def signup(self, data: UserCreate, company_code: str) -> dict:
+        # 1. Resolve company_id from company_code
+        company = await self.org_repo.get_company_by_code(company_code)
+        if not company:
+            raise Exception(f"Invalid company code: {company_code}")
 
-    async def refresh(self, refresh_token: str) -> dict:
-        return await self.auth_repo.refresh_token(refresh_token)
+        # 2. Check duplicate login_id / email
+        dup = await self.auth_repo.check_duplicate(data.login_id, data.email)
+        if dup:
+            raise Exception(dup)
 
-    async def get_current_auth_user(self, token: str) -> dict:
-        return await self.auth_repo.get_user_from_token(token)
+        # 3. Hash password and create profile
+        profile_data = {
+            "id": str(uuid.uuid4()),
+            "email": data.email,
+            "login_id": data.login_id,
+            "password_hash": hash_password(data.password),
+            "full_name": data.full_name,
+            "company_id": company.id,
+            "role": data.role.value,
+            "status": data.status.value,
+            "language": data.language,
+            "email_verified": False,
+        }
+        user = await self.auth_repo.sign_up(profile_data)
 
-    async def change_password(self, token: str, new_password: str) -> dict:
-        await self.auth_repo.update_user_password(token, new_password)
-        return {"message": "비밀번호가 변경되었습니다."}
+        # 4. Generate 6-digit OTP and send verification email
+        try:
+            code = _generate_otp()
+            expires_at = datetime.now(timezone.utc) + timedelta(
+                minutes=settings.EMAIL_VERIFY_CODE_EXPIRE_MINUTES
+            )
+            await self.auth_repo.save_verification_code(
+                user["id"], data.email, code, expires_at
+            )
+            await send_verification_code(data.email, code)
+        except Exception:
+            pass  # SMTP may not be configured yet
+
+        # 5. Issue tokens
+        access_token = create_access_token(user["id"])
+        refresh_token = create_refresh_token(user["id"])
+
+        return {
+            "message": "Signup successful. A 6-digit verification code has been sent to your email.",
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "user": {
+                "id": user["id"],
+                "login_id": user["login_id"],
+                "email": user["email"],
+                "full_name": user["full_name"],
+                "company_id": company.id,
+            },
+        }
+
+    async def logout(self) -> dict:
+        return {"message": "Successfully logged out."}
+
+    async def refresh(self, refresh_token_str: str) -> dict:
+        payload = decode_token(refresh_token_str)
+        if payload.get("type") != "refresh":
+            raise Exception("Invalid refresh token.")
+        user_id = payload["sub"]
+        return {
+            "access_token": create_access_token(user_id),
+            "refresh_token": create_refresh_token(user_id),
+        }
+
+    async def verify_email(self, email: str, code: str) -> dict:
+        # Look up valid (unused, not expired) verification code
+        record = await self.auth_repo.get_valid_verification_code(email, code)
+        if not record:
+            raise Exception("Invalid or expired verification code.")
+        # Mark code as used
+        await self.auth_repo.mark_verification_code_used(record["id"])
+        # Set email_verified = true on user profile
+        await self.auth_repo.verify_email(record["user_id"])
+        return {"message": "Email verified successfully."}
+
+    async def resend_verification_email(self, email: str) -> dict:
+        # Rate limiting: max 5 codes per hour
+        since = datetime.now(timezone.utc) - timedelta(hours=1)
+        count = await self.auth_repo.count_recent_codes(email, since)
+        if count >= 5:
+            raise Exception("Too many requests. Please try again later.")
+
+        # Find user by email
+        user = await self.auth_repo.get_user_by_email(email)
+        if not user:
+            raise Exception("No account found with this email.")
+        if user.get("email_verified"):
+            raise Exception("Email is already verified.")
+
+        # Invalidate previous codes
+        await self.auth_repo.invalidate_previous_codes(email)
+
+        # Generate and save new code
+        code = _generate_otp()
+        expires_at = datetime.now(timezone.utc) + timedelta(
+            minutes=settings.EMAIL_VERIFY_CODE_EXPIRE_MINUTES
+        )
+        await self.auth_repo.save_verification_code(user["id"], email, code, expires_at)
+        await send_verification_code(email, code)
+
+        return {"message": "Verification code sent."}

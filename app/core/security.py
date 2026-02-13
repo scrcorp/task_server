@@ -1,33 +1,36 @@
 from fastapi import HTTPException, Header, Depends
 from typing import Optional
-from app.core.dependencies import get_auth_repo, get_user_repo
-from app.repositories.auth import IAuthRepository
+from app.core.jwt import decode_token
+from app.core.dependencies import get_user_repo
 from app.schemas.user import User, UserRole
+import jwt as pyjwt
 
 
 async def get_current_user(authorization: Optional[str] = Header(None)) -> User:
     if not authorization:
-        raise HTTPException(status_code=401, detail="인증 토큰이 누락되었습니다.")
+        raise HTTPException(status_code=401, detail="Authorization token is missing.")
 
     token = authorization.replace("Bearer ", "")
     try:
-        auth_repo = get_auth_repo()
+        payload = decode_token(token)
+        if payload.get("type") != "access":
+            raise HTTPException(status_code=401, detail="Invalid token type.")
+        user_id = payload["sub"]
+
         user_repo = get_user_repo()
-
-        # 1. Verify token via auth repository
-        auth_user = await auth_repo.get_user_from_token(token)
-        user_id = auth_user["id"]
-
-        # 2. Get user profile from DB via user repository
         user = await user_repo.get_by_id(user_id)
         if not user:
-            raise HTTPException(status_code=404, detail="사용자 프로필을 찾을 수 없습니다.")
+            raise HTTPException(status_code=404, detail="User profile not found.")
 
         return user
+    except pyjwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired.")
+    except pyjwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token.")
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=401, detail=f"인증 실패: {str(e)}")
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
 
 
 def require_role(roles: list[UserRole]):
@@ -35,7 +38,7 @@ def require_role(roles: list[UserRole]):
         if current_user.role not in roles:
             raise HTTPException(
                 status_code=403,
-                detail=f"접근 권한이 없습니다. 필요한 역할: {[r.value for r in roles]}",
+                detail=f"Access denied. Required roles: {[r.value for r in roles]}",
             )
         return current_user
     return role_checker
