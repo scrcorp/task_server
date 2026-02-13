@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     EMAIL_VERIFY_CODE_EXPIRE_MINUTES: int = 10
     APP_BASE_URL: str = "http://localhost:8000"
 
+    # CORS
+    CORS_ORIGINS: str = "*"  # comma-separated, e.g. "http://localhost:3000,https://myapp.com"
+
     # Storage
     STORAGE_BUCKET_NAME: str = "task-assets"
     MAX_FILE_SIZE_MB: int = 10
