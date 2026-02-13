@@ -3,7 +3,9 @@
     "allow": [
       "Bash(flutter analyze:*)",
       "mcp__ide__getDiagnostics",
-      "Bash(.venv/bin/pip install:*)"
+      "Bash(.venv/bin/pip install:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }
