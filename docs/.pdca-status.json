@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-02-12T09:26:57.158Z",
+  "lastUpdated": "2026-02-12T09:29:54.217Z",
   "activeFeatures": [
     "repositories",
     "core",
@@ -43,7 +43,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-02-12T09:05:11.429Z",
-        "lastUpdated": "2026-02-12T09:09:11.306Z"
+        "lastUpdated": "2026-02-12T09:27:19.718Z"
       },
       "lastFile": "/Users/jm/development/projects/scr/task_server/app/core/dependencies.py"
     },
@@ -69,9 +69,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-02-12T09:05:42.669Z",
-        "lastUpdated": "2026-02-12T09:10:01.366Z"
+        "lastUpdated": "2026-02-12T09:29:15.796Z"
       },
-      "lastFile": "/Users/jm/development/projects/scr/task_server/app/api/endpoints/tasks.py"
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/api/endpoints/files.py"
     },
     "admin_service.py": {
       "phase": "do",
@@ -95,9 +95,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-02-12T09:07:42.922Z",
-        "lastUpdated": "2026-02-12T09:26:57.158Z"
+        "lastUpdated": "2026-02-12T09:27:02.935Z"
       },
-      "lastFile": "/Users/jm/development/projects/scr/task_server/app/schemas/user.py"
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/schemas/attendance.py"
     },
     "comment_service.py": {
       "phase": "do",
@@ -121,7 +121,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-02-12T09:08:12.652Z",
-        "lastUpdated": "2026-02-12T09:26:07.534Z"
+        "lastUpdated": "2026-02-12T09:29:54.217Z"
       },
       "lastFile": "/Users/jm/development/projects/scr/task_server/app/services/attendance_service.py"
     },
@@ -173,7 +173,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-02-12T09:08:21.018Z",
-        "lastUpdated": "2026-02-12T09:08:21.018Z"
+        "lastUpdated": "2026-02-12T09:29:23.258Z"
       },
       "lastFile": "/Users/jm/development/projects/scr/task_server/app/services/file_service.py"
     },
@@ -212,9 +212,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-02-12T09:09:18.273Z",
-        "lastUpdated": "2026-02-12T09:24:21.740Z"
+        "lastUpdated": "2026-02-12T09:29:36.740Z"
       },
-      "lastFile": "/Users/jm/development/projects/scr/task_server/app/models/enums.py"
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/main.py"
     },
     "user_service.py": {
       "phase": "do",
@@ -238,7 +238,7 @@
   "session": {
     "startedAt": "2026-02-12T08:59:59.678Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-02-12T09:26:57.158Z"
+    "lastActivity": "2026-02-12T09:29:54.217Z"
   },
   "history": [
     {
@@ -628,6 +628,96 @@
     {
       "timestamp": "2026-02-12T09:26:57.158Z",
       "feature": "schemas",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:27:02.935Z",
+      "feature": "schemas",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:27:19.718Z",
+      "feature": "core",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:27:41.387Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:27:54.390Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:28:18.253Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:28:29.402Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:28:40.863Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:28:46.047Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:28:54.761Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:29:00.268Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:29:08.491Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:29:15.796Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:29:23.258Z",
+      "feature": "file_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:29:36.740Z",
+      "feature": "task_server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T09:29:54.217Z",
+      "feature": "attendance_service.py",
       "phase": "do",
       "action": "updated"
     }

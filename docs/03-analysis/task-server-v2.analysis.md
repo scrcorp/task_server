@@ -1,9 +1,9 @@
-# Task Server V2 - Comprehensive Gap Analysis Report
+# Task Server V2 - Gap Analysis Report (v2.0 Re-Analysis)
 
-> **Analysis Type**: Design vs Implementation Gap Analysis
+> **Analysis Type**: Design vs Implementation Gap Analysis (Re-score)
 >
 > **Project**: task_server
-> **Version**: 0.1.0
+> **Version**: 1.0.0
 > **Analyst**: bkit-gap-detector
 > **Date**: 2026-02-12
 > **Design Doc**: [task-server-v2.design.md](../02-design/features/task-server-v2.design.md)
@@ -13,650 +13,414 @@
 
 ## 1. Analysis Overview
 
-### 1.1 Analysis Purpose
+### 1.1 Purpose
 
-Comprehensive gap analysis comparing the Task Server V2 design document and API specification against the actual implementation in `app/`. This analysis covers 8 key areas: architecture compliance, Supabase decoupling, API coverage, data models, repository abstraction, storage abstraction, error handling, and DI patterns.
+Re-analysis following targeted improvements to the 10 deficiency areas identified in the v1.0 analysis (overall 79.8%). This document verifies each claimed fix against the actual codebase and produces updated scores across all 8 categories.
 
-### 1.2 Analysis Scope
+### 1.2 Scope
 
 - **Design Document**: `docs/02-design/features/task-server-v2.design.md`
 - **API Specification**: `docs/01-plan/api-specification.md`
 - **Implementation Path**: `app/` (all Python source files)
-- **Files Analyzed**: 51 Python files across api/, services/, repositories/, schemas/, models/, storage/, core/
+- **Previous Analysis**: v1.0 (2026-02-12, 79.8% overall)
 
 ---
 
-## 2. Overall Scores
+## 2. Score Comparison: v1.0 vs v2.0
 
-| Category | Score | Status |
-|----------|:-----:|:------:|
-| Architecture (Repository Pattern) | 88% | ✅ |
-| Supabase Decoupling | 95% | ✅ |
-| API Coverage | 83% | ⚠️ |
-| Data Models (Pydantic Schemas) | 85% | ⚠️ |
-| Repository Abstraction | 72% | ⚠️ |
-| Storage Abstraction | 90% | ✅ |
-| Error Handling | 65% | ⚠️ |
-| DI Pattern (Constructor Injection) | 60% | ⚠️ |
-| **Overall** | **79.8%** | **⚠️** |
-
----
-
-## 3. Architecture Compliance (Repository Pattern)
-
-**Score: 88%**
-
-### 3.1 Layer Structure Verification
-
-| Layer | Design Location | Actual Location | Status |
-|-------|----------------|-----------------|--------|
-| API/Presentation | `app/api/` | `app/api/endpoints/` | ✅ Match |
-| Application/Service | `app/services/` | `app/services/` | ✅ Match |
-| Domain/Model | `app/models/`, `app/schemas/` | `app/models/`, `app/schemas/` | ✅ Match |
-| Infrastructure/Repository | `app/repositories/`, `app/storage/` | `app/repositories/`, `app/storage/` | ✅ Match |
-| DI Container | `app/core/dependencies.py` | `app/core/dependencies.py` | ✅ Match |
-
-### 3.2 Data Flow Compliance
-
-Design: `Endpoint -> Service -> Repository -> Supabase`
-
-| Flow | Expected | Actual | Status |
-|------|----------|--------|--------|
-| Auth endpoints | Endpoint -> AuthService -> AuthRepo | Endpoint -> AuthService -> AuthRepo | ✅ |
-| Task CRUD | Endpoint -> TaskService -> TaskRepo | Endpoint -> TaskService -> **TaskRepo directly** | ⚠️ |
-| Comments | Endpoint -> CommentService -> CommentRepo | Endpoint -> CommentService -> CommentRepo | ✅ |
-| Attendance | Endpoint -> AttendanceService -> AttendanceRepo | Endpoint -> AttendanceService -> AttendanceRepo | ✅ |
-| Opinions | Endpoint -> OpinionService -> OpinionRepo | Endpoint -> OpinionService -> OpinionRepo | ✅ |
-| Notifications | Endpoint -> NotificationService -> NotificationRepo | Endpoint -> NotificationService -> NotificationRepo | ✅ |
-| Files | Endpoint -> FileService -> StorageProvider | Endpoint -> FileService -> StorageProvider | ✅ |
-| Dashboard | Endpoint -> DashboardService -> Repos | Endpoint -> DashboardService -> Repos | ✅ |
-| Admin (Org CRUD) | Endpoint -> AdminService -> OrgRepo | Endpoint -> AdminService -> **OrgRepo directly** | ⚠️ |
-| Notices (public) | Endpoint -> NoticeService -> NoticeRepo | Endpoint -> **NoticeRepo directly** | ❌ |
-
-### 3.3 Violations Found
-
-| File | Layer | Violation | Severity |
-|------|-------|-----------|----------|
-| `app/api/endpoints/tasks.py` | Presentation | Calls `service.task_repo.list()` directly, bypassing service methods (lines 42, 53, 69, 83, 95, 109) | HIGH |
-| `app/api/endpoints/admin.py` | Presentation | Calls `service.org_repo.*` and `service.template_repo.*` directly (lines 67, 72, 77, 82, 91, 96, 101, 110, 115, 120, 134) | HIGH |
-| `app/api/endpoints/notices.py` | Presentation | Read endpoints (lines 20-33) call `get_notice_repo()` directly without going through a service | HIGH |
-| `app/api/endpoints/users.py` | Presentation | `update_my_profile` calls `get_user_repo()` directly (line 33) | MEDIUM |
+| Category | v1.0 | v2.0 | Delta | Status |
+|----------|:----:|:----:|:-----:|:------:|
+| Architecture (Repository Pattern) | 88% | 97% | +9 | ✅ |
+| Supabase Decoupling | 95% | 95% | 0 | ✅ |
+| API Coverage | 83% | 93% | +10 | ✅ |
+| Data Models (Pydantic Schemas) | 85% | 95% | +10 | ✅ |
+| Repository Abstraction | 72% | 95% | +23 | ✅ |
+| Storage Abstraction | 90% | 90% | 0 | ✅ |
+| Error Handling | 65% | 88% | +23 | ✅ |
+| DI Pattern (Constructor Injection) | 60% | 95% | +35 | ✅ |
+| **Overall** | **79.8%** | **93.5%** | **+13.7** | **✅** |
 
 ---
 
-## 4. Supabase Decoupling
+## 3. Category-by-Category Verification
 
-**Score: 95%**
+### 3.1 Architecture (Repository Pattern) -- 88% -> 97%
 
-### 4.1 Supabase Import Locations
+**What was fixed**: Endpoint-to-repository leaks in `tasks.py`, `admin.py`, `notices.py`, and `users.py`.
 
-| File | Location | Allowed? | Status |
-|------|----------|----------|--------|
-| `app/core/supabase.py` | Core (client init) | YES | ✅ |
-| `app/core/dependencies.py` | DI Container | YES | ✅ |
-| `app/repositories/auth.py` | Repository | YES | ✅ |
-| `app/repositories/user.py` | Repository | YES | ✅ |
-| `app/repositories/task.py` | Repository | YES | ✅ |
-| `app/repositories/organization.py` | Repository | YES | ✅ |
-| `app/repositories/checklist_template.py` | Repository | YES | ✅ |
-| `app/repositories/feedback_notice.py` | Repository | YES | ✅ |
-| `app/repositories/comment.py` | Repository | YES | ✅ |
-| `app/repositories/attendance.py` | Repository | YES | ✅ |
-| `app/repositories/opinion.py` | Repository | YES | ✅ |
-| `app/repositories/notification.py` | Repository | YES | ✅ |
-| `app/storage/supabase.py` | Storage impl | YES | ✅ |
+**Verification results**:
 
-### 4.2 Leakage Check
+| Data Flow | v1.0 Status | v2.0 Status | Evidence |
+|-----------|:-----------:|:-----------:|----------|
+| Tasks: Endpoint -> TaskService | Leaked (`service.task_repo.*`) | ✅ Fixed | `tasks.py` calls `service.list_tasks()`, `service.get_task()`, `service.create_task()`, `service.update_task()`, `service.delete_task()` |
+| Admin: Endpoint -> AdminService | Leaked (`service.org_repo.*`) | ✅ Fixed | `admin.py` calls `service.list_brands()`, `service.create_brand()`, `service.list_branches()`, etc. |
+| Notices: Endpoint -> NoticeService | Leaked (called `get_notice_repo()` directly) | ✅ Fixed | `notices.py` calls `service.list_notices()`, `service.get_notice()`, `service.confirm_notice()` |
+| Users: Endpoint -> UserService | Leaked (`get_user_repo()` directly) | ✅ Fixed | `users.py` calls `service.update_profile()`, `service.change_password()` |
+| Auth: Endpoint -> AuthService | ✅ Already clean | ✅ Clean | No change needed |
+| Comments: Endpoint -> CommentService | ✅ Already clean | ✅ Clean | No change needed |
+| Attendance: Endpoint -> AttendanceService | ✅ Already clean | ✅ Clean | No change needed |
+| Dashboard: Endpoint -> DashboardService | ✅ Already clean | ✅ Clean | No change needed |
+| Opinions: Endpoint -> OpinionService | ✅ Already clean | ✅ Clean | No change needed |
+| Notifications: Endpoint -> NotificationService | ✅ Already clean | ✅ Clean | No change needed |
+| Files: Endpoint -> FileService | ✅ Already clean | ✅ Clean | No change needed |
 
-| Layer | Supabase imports found | Status |
-|-------|:---------------------:|--------|
+**Remaining issue (minor)**:
+- `AdminService` constructor accepts `TaskRepository` (concrete) and `SupabaseUserRepository` (concrete) instead of `IRepository[Task]` and `IRepository[User]` interfaces. This works but is inconsistent with the other parameters that use interfaces (`IOrganizationRepository`, `IChecklistTemplateRepository`, etc.).
+
+**Score: 97%** -- All 11 data flows now go through service layer. Minor type-hint inconsistency on 2 service constructor params.
+
+---
+
+### 3.2 Supabase Decoupling -- 95% (unchanged)
+
+**Verification**: All Supabase imports remain correctly confined.
+
+| Layer | Supabase imports | Status |
+|-------|:----------------:|--------|
 | `app/api/endpoints/` | 0 | ✅ Clean |
 | `app/services/` | 0 | ✅ Clean |
 | `app/schemas/` | 0 | ✅ Clean |
 | `app/models/` | 0 | ✅ Clean |
+| `app/repositories/` | 10 files | ✅ Allowed (infrastructure layer) |
+| `app/storage/supabase.py` | 1 file | ✅ Allowed (infrastructure layer) |
+| `app/core/dependencies.py` | 1 file | ✅ Allowed (DI container) |
 
-### 4.3 Minor Issue
+**Remaining issue (unchanged from v1.0)**:
+- 10 of 11 repositories import `supabase` at module level (`from app.core.supabase import supabase`) instead of receiving the client via constructor injection. Only `SupabaseAuthRepository` receives `client` in `__init__`. This weakens testability but does not violate layer boundaries.
 
-- `app/repositories/user.py` imports `supabase` as a module-level global (`from app.core.supabase import supabase`) and uses it directly in methods instead of receiving it via constructor injection, unlike `SupabaseAuthRepository` which receives `client` in `__init__`. This is consistent across most repositories but weakens testability.
-
----
-
-## 5. API Coverage
-
-**Score: 83%**
-
-### 5.1 API Specification vs Implementation
-
-#### Auth APIs (5 specified, 5 implemented = 100%)
-
-| Spec Endpoint | Method | Implementation File | Status |
-|---------------|--------|---------------------|--------|
-| `/api/v1/auth/login` | POST | `app/api/endpoints/auth.py:35` | ✅ Implemented |
-| `/api/v1/auth/signup` | POST | `app/api/endpoints/auth.py:44` | ✅ Implemented |
-| `/api/v1/auth/logout` | POST | `app/api/endpoints/auth.py:63` | ✅ Implemented |
-| `/api/v1/auth/refresh` | POST | `app/api/endpoints/auth.py:75` | ✅ Implemented |
-| `/api/v1/auth/me` | GET | `app/api/endpoints/auth.py:84` | ✅ Implemented |
-
-#### User APIs (3 specified, 3 implemented = 100%)
-
-| Spec Endpoint | Method | Implementation File | Status |
-|---------------|--------|---------------------|--------|
-| `/api/v1/users/me/profile` | GET | `app/api/endpoints/users.py:20` | ✅ Implemented |
-| `/api/v1/users/me/profile` | PATCH | `app/api/endpoints/users.py:26` | ✅ Implemented |
-| `/api/v1/users/me/password` | POST | `app/api/endpoints/users.py:45` | ✅ Implemented |
-
-#### Task APIs (6 specified, 6 implemented = 100%)
-
-| Spec Endpoint | Method | Implementation File | Status |
-|---------------|--------|---------------------|--------|
-| `/api/v1/tasks` | GET | `app/api/endpoints/tasks.py:27` | ✅ Implemented |
-| `/api/v1/tasks/{task_id}` | GET | `app/api/endpoints/tasks.py:47` | ✅ Implemented |
-| `/api/v1/tasks` | POST | `app/api/endpoints/tasks.py:59` | ✅ Implemented |
-| `/api/v1/tasks/{task_id}` | PATCH | `app/api/endpoints/tasks.py:74` | ✅ Implemented |
-| `/api/v1/tasks/{task_id}` | DELETE | `app/api/endpoints/tasks.py:88` | ✅ Implemented |
-| `/api/v1/tasks/{task_id}/status` | PATCH | `app/api/endpoints/tasks.py:101` | ✅ Implemented |
-
-#### Checklist APIs (3 specified, 3 implemented = 100%)
-
-| Spec Endpoint | Method | Implementation File | Status |
-|---------------|--------|---------------------|--------|
-| `/api/v1/tasks/checklist/{item_id}` | PATCH | `app/api/endpoints/tasks.py:116` | ✅ Implemented |
-| `/api/v1/tasks/{task_id}/checklist` | POST | `app/api/endpoints/tasks.py:131` | ✅ Implemented |
-| `/api/v1/tasks/checklist/{item_id}` | DELETE | `app/api/endpoints/tasks.py:146` | ✅ Implemented |
-
-#### Comment APIs (3 specified, 3 implemented = 100%)
-
-| Spec Endpoint | Method | Implementation File | Status |
-|---------------|--------|---------------------|--------|
-| `/api/v1/tasks/{task_id}/comments` | GET | `app/api/endpoints/tasks.py:162` | ✅ Implemented |
-| `/api/v1/tasks/{task_id}/comments` | POST | `app/api/endpoints/tasks.py:175` | ✅ Implemented |
-| `/api/v1/tasks/{task_id}/comments/{comment_id}` | DELETE | `app/api/endpoints/tasks.py:189` | ✅ Implemented |
-
-#### Notice APIs (5 specified, 5 implemented + 1 extra = 100%)
-
-| Spec Endpoint | Method | Implementation File | Status |
-|---------------|--------|---------------------|--------|
-| `/api/v1/notices` | GET | `app/api/endpoints/notices.py:18` | ✅ Implemented |
-| `/api/v1/notices/{notice_id}` | GET | `app/api/endpoints/notices.py:27` | ✅ Implemented |
-| `/api/v1/notices` | POST | `app/api/endpoints/notices.py:47` | ✅ Implemented |
-| `/api/v1/notices/{notice_id}` | PATCH | `app/api/endpoints/notices.py:59` | ✅ Implemented |
-| `/api/v1/notices/{notice_id}` | DELETE | `app/api/endpoints/notices.py:73` | ✅ Implemented |
-| `/api/v1/notices/{notice_id}/confirm` | POST | `app/api/endpoints/notices.py:36` | ⚠️ Extra (not in spec) |
-
-#### Dashboard API (1 specified, 1 implemented = 100%)
-
-| Spec Endpoint | Method | Implementation File | Status |
-|---------------|--------|---------------------|--------|
-| `/api/v1/dashboard/summary` | GET | `app/api/endpoints/dashboard.py:10` | ✅ Implemented |
-
-#### Attendance APIs (4 specified, 4 implemented = 100%)
-
-| Spec Endpoint | Method | Implementation File | Status |
-|---------------|--------|---------------------|--------|
-| `/api/v1/attendance/clock-in` | POST | `app/api/endpoints/attendance.py:23` | ✅ Implemented |
-| `/api/v1/attendance/clock-out` | POST | `app/api/endpoints/attendance.py:34` | ✅ Implemented |
-| `/api/v1/attendance/today` | GET | `app/api/endpoints/attendance.py:17` | ✅ Implemented |
-| `/api/v1/attendance/history` | GET | `app/api/endpoints/attendance.py:45` | ✅ Implemented |
-
-#### Opinion APIs (2 specified, 2 implemented = 100%)
-
-| Spec Endpoint | Method | Implementation File | Status |
-|---------------|--------|---------------------|--------|
-| `/api/v1/opinions` | POST | `app/api/endpoints/opinions.py:16` | ✅ Implemented |
-| `/api/v1/opinions/me` | GET | `app/api/endpoints/opinions.py:25` | ⚠️ URL differs |
-
-**Note**: The spec defines `GET /api/v1/opinions/me` but implementation uses `GET /api/v1/opinions/` (root path). Both return user's own opinions, but the URL does not match the specification.
-
-#### Notification APIs (3 specified, 3 implemented = 100%)
-
-| Spec Endpoint | Method | Implementation File | Status |
-|---------------|--------|---------------------|--------|
-| `/api/v1/notifications` | GET | `app/api/endpoints/notifications.py:15` | ✅ Implemented |
-| `/api/v1/notifications/{id}/read` | PATCH | `app/api/endpoints/notifications.py:21` | ✅ Implemented |
-| `/api/v1/notifications/read-all` | PATCH | `app/api/endpoints/notifications.py:31` | ✅ Implemented |
-
-#### File Upload APIs (2 specified, 2 implemented = partial)
-
-| Spec Endpoint | Method | Implementation File | Status |
-|---------------|--------|---------------------|--------|
-| `/api/v1/files/upload` | POST | `app/api/endpoints/files.py:14` | ✅ Implemented |
-| `/api/v1/files/presigned-url` | POST | `app/api/endpoints/files.py:29` | ⚠️ Method differs |
-
-**Note**: The spec defines `POST /api/v1/files/presigned-url` but implementation uses `GET`. This is arguably better REST practice, but it does not match the spec.
-
-### 5.2 Admin APIs (Design Document, not in main spec)
-
-| Endpoint | Method | Implementation | Status |
-|----------|--------|---------------|--------|
-| `/api/v1/admin/staff/pending` | GET | `app/api/endpoints/admin.py:46` | ✅ |
-| `/api/v1/admin/staff/{id}/approve` | PATCH | `app/api/endpoints/admin.py:51` | ✅ |
-| `/api/v1/admin/staff/{id}/reject` | PATCH | `app/api/endpoints/admin.py:56` | ✅ |
-| `/api/v1/admin/brands` | CRUD | `app/api/endpoints/admin.py:64-83` | ✅ |
-| `/api/v1/admin/branches` | CRUD | `app/api/endpoints/admin.py:88-102` | ✅ |
-| `/api/v1/admin/groups` | CRUD | `app/api/endpoints/admin.py:107-121` | ✅ |
-| `/api/v1/admin/checklist-templates` | POST/GET | `app/api/endpoints/admin.py:126-134` | ✅ |
-| `/api/v1/admin/dashboard/checklist-compliance` | GET | `app/api/endpoints/admin.py:139` | ✅ (stub) |
-| `/api/v1/admin/feedbacks` | GET/POST | `app/api/endpoints/admin.py:147-158` | ✅ |
-
-### 5.3 Coverage Summary
-
-| Category | Spec Count | Implemented | Match Rate |
-|----------|:---------:|:-----------:|:----------:|
-| Auth | 5 | 5 | 100% |
-| Users | 3 | 3 | 100% |
-| Tasks | 6 | 6 | 100% |
-| Checklist | 3 | 3 | 100% |
-| Comments | 3 | 3 | 100% |
-| Notices | 5 | 5 (+1 extra) | 100% |
-| Dashboard | 1 | 1 | 100% |
-| Attendance | 4 | 4 | 100% |
-| Opinions | 2 | 2 (URL diff) | 90% |
-| Notifications | 3 | 3 | 100% |
-| File Upload | 2 | 2 (method diff) | 90% |
-| Admin (design) | 9+ | 9+ | 100% |
-| **Total** | **37 (spec)** | **37** | **~97% functional, 83% exact match** |
-
-### 5.4 Response Format Mismatches
-
-| Endpoint | Spec Response | Actual Response | Impact |
-|----------|---------------|-----------------|--------|
-| `GET /dashboard/summary` | Includes `user` field | Missing `user` field in response | MEDIUM |
-| `GET /dashboard/summary` | `task_summary.pending_tasks` | `task_summary.todo` | LOW |
-| `GET /dashboard/summary` | `task_summary.completion_rate` | Missing | LOW |
-| `GET /attendance/history` | `summary.total_hours`, `summary.late_count` | `summary.completed`, `summary.incomplete` | MEDIUM |
-| `POST /files/upload` | `file_url`, `file_name`, `file_size`, `content_type` | `filename`, `original_filename`, `url`, `folder` | HIGH |
-| `POST /opinions` | Route at `/opinions/me` | Route at `/opinions/` (GET list) | LOW |
-| `POST /files/presigned-url` | POST method with body | GET method with query param | MEDIUM |
-| `PATCH /users/me/password` | Requires `current_password` field | Only requires `new_password` | HIGH |
+**Score: 95%** -- No regression, no improvement. Module-level import pattern persists.
 
 ---
 
-## 6. Data Models (Pydantic Schemas)
+### 3.3 API Coverage -- 83% -> 93%
 
-**Score: 85%**
+**What was fixed**: File upload response format, presigned URL method (POST), dashboard field names, attendance `work_hours`, notifications `unread_only` parameter.
 
-### 6.1 Schema Coverage
+| Previously Mismatched Item | v1.0 | v2.0 | Evidence |
+|----------------------------|:----:|:----:|----------|
+| File upload response: `file_url, file_name, file_size, content_type` | ❌ Different keys | ✅ Fixed | `file_service.py:14-18` returns `file_url`, `file_name`, `file_size`, `content_type` |
+| Presigned URL: POST method | ❌ Was GET | ✅ Fixed | `files.py:31` uses `@router.post("/presigned-url")` with `PresignedUrlRequest` body |
+| Dashboard `task_summary` keys | ❌ Different keys | ✅ Fixed | `dashboard_service.py:23-28` returns `total_tasks`, `pending_tasks`, `completed_tasks`, `completion_rate` |
+| Attendance `work_hours` | ❌ Missing | ✅ Fixed | `attendance_service.py:43-45` calculates `work_hours` from clock_in/clock_out delta |
+| Notifications `unread_only` | ❌ Missing | Partial | `notifications.py:14` accepts `unread_only: Optional[bool]` param but does NOT pass it to service/repo |
+| Password `current_password` | ❌ Missing | ✅ Fixed | `users.py:15` includes `current_password: str` in request schema |
 
-| Entity | Schema File | Base/Create/Read | Status |
-|--------|------------|:----------------:|--------|
-| Task | `app/schemas/task.py` | TaskBase/TaskCreate/Task | ✅ Complete |
-| ChecklistItem | `app/schemas/task.py` | ChecklistItemBase/ChecklistItemCreate/ChecklistItem | ✅ Complete |
-| Comment | `app/schemas/task.py` | CommentBase/CommentCreate/Comment | ✅ Complete |
-| Notice | `app/schemas/notice.py` | NoticeBase/NoticeCreate/Notice | ✅ Complete |
-| User | `app/schemas/user.py` | UserBase/UserCreate/UserUpdate/User | ✅ Complete |
-| Brand | `app/schemas/organization.py` | BrandBase/BrandCreate/Brand | ✅ Complete |
-| Branch | `app/schemas/organization.py` | BranchBase/BranchCreate/Branch | ✅ Complete |
-| Group | `app/schemas/organization.py` | GroupBase/GroupCreate/Group | ✅ Complete |
-| Attendance | `app/schemas/attendance.py` | AttendanceRecord/ClockInRequest | ⚠️ Partial |
-| Opinion | `app/schemas/opinion.py` | Opinion/OpinionCreate | ✅ Complete |
-| Notification | `app/schemas/notification.py` | Notification/NotificationListResponse | ✅ Complete |
+**Remaining issues**:
 
-### 6.2 Missing Schema Fields
+| Issue | Spec | Implementation | Severity |
+|-------|------|----------------|----------|
+| `unread_only` not wired through | `GET /notifications?unread_only=true` filters results | Parameter accepted but ignored -- `service.get_notifications()` does not receive it | LOW |
+| Opinions list URL | `GET /opinions/me` | `GET /opinions/` (root path) | LOW |
+| Dashboard missing `user` object | Spec includes `user: {full_name, role, branch}` | Response has `task_summary`, `urgent_alerts`, `daily_progress`, `recent_notices` but no `user` | LOW |
+| Dashboard `daily_progress` field names | Spec: `total_checklist_items`, `completed_items`, `completion_rate` | Impl: `total_items`, `completed_items`, `rate` | LOW |
+| Attendance history `summary` fields | Spec: `total_hours`, `late_count` | Impl: `total_days`, `completed`, `incomplete` | MEDIUM |
+| Presigned URL response | Spec: `upload_url`, `file_url`, `expires_in` | Impl: `url` (single field) | MEDIUM |
+| Notification `type` values | Spec: `task_assigned, task_status_changed, comment_added, notice_posted, attendance_reminder` | Enum: `task_assigned, task_updated, notice, feedback, system` | LOW |
 
-| Schema | Field in Spec | Defined | Status |
-|--------|--------------|:-------:|--------|
-| Notice | `is_important` | NO | ❌ Missing |
-| Notice | `author` | NO (only `author_id` in service) | ⚠️ Partial |
-| ChecklistItem | `verification_type` | NO | ❌ Missing |
-| ChecklistItem | `verification_data` | NO | ❌ Missing |
-| AttendanceRecord | `work_hours` | NO | ❌ Missing |
-| User | `profile_image` | NO | ❌ Missing |
-| Comment | `user_name` | NO | ❌ Missing |
-| Comment | `is_manager` | NO | ❌ Missing |
-| Task | `comments` field type | `List[Comment]` | ⚠️ Embedded (not matching spec join fields) |
-
-### 6.3 Enums Coverage
-
-| Enum (from spec) | Defined | Location | Status |
-|------------------|:-------:|----------|--------|
-| TaskType (daily, assigned) | YES | `app/models/enums.py` | ✅ |
-| Priority (urgent, normal, low) | YES | `app/models/enums.py` | ✅ |
-| TaskStatus (todo, in_progress, done) | YES | `app/models/enums.py` | ✅ |
-| UserRole (admin, manager, staff) | YES | `app/schemas/user.py` | ✅ |
-| UserStatus (pending, active, inactive) | YES | `app/schemas/user.py` | ✅ |
-| AttendanceStatus (not_started, on_duty, off_duty, completed) | NO (string literal) | `app/schemas/attendance.py` | ⚠️ Not enum |
-| NotificationType (task_assigned, etc.) | NO (string literal) | `app/schemas/notification.py` | ⚠️ Not enum |
-| OpinionStatus (submitted, reviewed, resolved) | NO (string literal) | `app/schemas/opinion.py` | ⚠️ Not enum |
+**Score: 93%** -- 5 critical mismatches fixed. 7 minor field-level differences remain, mostly in secondary response fields.
 
 ---
 
-## 7. Repository Abstraction
+### 3.4 Data Models (Pydantic Schemas) -- 85% -> 95%
 
-**Score: 72%**
+**What was fixed**: Added missing fields across Notice, ChecklistItem, Comment, User, AttendanceRecord schemas. Added enums to `models/enums.py`.
 
-### 7.1 IRepository Base Interface Usage
+| Previously Missing Field | v1.0 | v2.0 | Evidence |
+|--------------------------|:----:|:----:|----------|
+| Notice `is_important` | ❌ Missing | ✅ Added | `notice.py:8` -- `is_important: bool = Field(False)` |
+| Notice `author_id` | ❌ Missing | ✅ Added | `notice.py:15` -- `author_id: Optional[str] = None` |
+| ChecklistItem `verification_type` | ❌ Missing | ✅ Added | `task.py:11` -- `verification_type: str = Field("none")` |
+| ChecklistItem `verification_data` | ❌ Missing | ✅ Added | `task.py:12` -- `verification_data: Optional[str] = Field(None)` |
+| Comment `user_name` | ❌ Missing | ✅ Added | `task.py:35` -- `user_name: Optional[str] = Field(None)` |
+| Comment `is_manager` | ❌ Missing | ✅ Added | `task.py:36` -- `is_manager: bool = Field(False)` |
+| User `profile_image` | ❌ Missing | ✅ Added | `user.py:27` -- `profile_image: Optional[str] = None` |
+| UserUpdate `profile_image` + `language` | ❌ Missing | ✅ Added | `user.py:37-38` -- both fields present |
+| AttendanceRecord `work_hours` | ❌ Missing | ✅ Added | `attendance.py:14` -- `work_hours: Optional[float] = None` |
+| AttendanceRecord uses `AttendanceStatus` enum | ❌ String literal | ✅ Uses enum | `attendance.py:4,13` -- imports and uses `AttendanceStatus` |
 
-| Repository | Extends `IRepository[T]` | Status |
-|-----------|:-----------------------:|--------|
-| `SupabaseAuthRepository` | NO (has own `IAuthRepository`) | ⚠️ Custom interface (acceptable) |
-| `SupabaseUserRepository` | YES (`IRepository[User]`) | ✅ |
-| `TaskRepository` | YES (`IRepository[Task]`) | ✅ |
-| `OrganizationRepository` | NO | ❌ No interface |
-| `ChecklistTemplateRepository` | NO | ❌ No interface |
-| `FeedbackRepository` | NO | ❌ No interface |
-| `NoticeRepository` | NO | ❌ No interface |
-| `CommentRepository` | NO | ❌ No interface |
-| `AttendanceRepository` | NO | ❌ No interface |
-| `OpinionRepository` | NO | ❌ No interface |
-| `NotificationRepository` | NO | ❌ No interface |
+**Enum consolidation status**:
 
-**Result**: Only 2 out of 11 repositories implement `IRepository`. 8 repositories are concrete classes with no abstract interface, making them impossible to swap without modifying consumers.
+| Enum | v1.0 Location | v2.0 Location | Status |
+|------|--------------|--------------|--------|
+| TaskType, Priority, TaskStatus | `models/enums.py` | `models/enums.py` | ✅ Unchanged |
+| AttendanceStatus | String literal in schema | `models/enums.py` | ✅ Added |
+| NotificationType | String literal in schema | `models/enums.py` | ✅ Added |
+| OpinionStatus | String literal in schema | `models/enums.py` | ✅ Added |
+| UserRole, UserStatus | `schemas/user.py` | `schemas/user.py` | ⚠️ Still split |
 
-### 7.2 Constructor Injection in Repositories
+**Remaining issues**:
+- `UserRole` and `UserStatus` are still defined in `schemas/user.py` instead of `models/enums.py`. This is a consistency issue, not a functional one.
+- `NotificationType` enum values (`task_assigned, task_updated, notice, feedback, system`) do not match the API spec values (`task_assigned, task_status_changed, comment_added, notice_posted, attendance_reminder`).
+- `OpinionStatus` schema (`opinion.py:9`) still uses a plain string `status: str = "submitted"` rather than the `OpinionStatus` enum from `models/enums.py`.
 
-| Repository | Receives `supabase` client via constructor | Status |
-|-----------|:-----------------------------------------:|--------|
-| `SupabaseAuthRepository` | YES (`__init__(self, client)`) | ✅ |
-| `SupabaseUserRepository` | NO (module-level global) | ❌ |
-| `TaskRepository` | NO (module-level global) | ❌ |
-| `OrganizationRepository` | NO (module-level global) | ❌ |
-| `ChecklistTemplateRepository` | NO (module-level global) | ❌ |
-| All others | NO (module-level global) | ❌ |
-
-**Result**: Only `SupabaseAuthRepository` follows proper DI by accepting the client in its constructor. All other repositories import `supabase` at the module level, making them harder to test and swap.
+**Score: 95%** -- All 10 missing fields added. Enum migration mostly done; minor inconsistencies remain in enum placement and usage.
 
 ---
 
-## 8. Storage Abstraction
+### 3.5 Repository Abstraction -- 72% -> 95%
 
-**Score: 90%**
+**What was fixed**: Added ABC interfaces for all 9 previously missing repositories.
 
-### 8.1 Interface Compliance
+| Repository | v1.0 Interface | v2.0 Interface | Evidence |
+|------------|:--------------:|:--------------:|----------|
+| SupabaseAuthRepository | ✅ `IAuthRepository` | ✅ `IAuthRepository` | `auth.py:5` |
+| SupabaseUserRepository | ✅ `IRepository[User]` | ✅ `IRepository[User]` | `user.py:6` |
+| TaskRepository | ✅ `IRepository[Task]` | ✅ `IRepository[Task]` | `task.py:6` |
+| CommentRepository | ❌ None | ✅ `ICommentRepository` | `comment.py:6-14` |
+| AttendanceRepository | ❌ None | ✅ `IAttendanceRepository` | `attendance.py:6-17` |
+| OpinionRepository | ❌ None | ✅ `IOpinionRepository` | `opinion.py:6-17` |
+| NotificationRepository | ❌ None | ✅ `INotificationRepository` | `notification.py:6-20` |
+| OrganizationRepository | ❌ None | ✅ `IOrganizationRepository` | `organization.py:8-37` |
+| ChecklistTemplateRepository | ❌ None | ✅ `IChecklistTemplateRepository` | `checklist_template.py:6-20` |
+| FeedbackRepository | ❌ None | ✅ `IFeedbackRepository` | `feedback_notice.py:6-14` |
+| NoticeRepository | ❌ None | ✅ `INoticeRepository` | `feedback_notice.py:34-51` |
+
+**Result: 11/11 repositories now have ABC interfaces** (previously 2/11).
+
+**Remaining issue**:
+- Constructor injection of the Supabase client is only done in `SupabaseAuthRepository`. The other 10 repositories still use module-level `from app.core.supabase import supabase`. This means swapping implementations requires changing the module import, not just the DI container. However, since each concrete repository class is only instantiated in `dependencies.py`, the practical impact is limited.
+
+**Score: 95%** -- All repositories have abstract interfaces. Module-level client import is the sole remaining concern.
+
+---
+
+### 3.6 Storage Abstraction -- 90% (unchanged)
+
+**Verification**:
 
 | Design Interface Method | Implementation | Status |
 |------------------------|----------------|--------|
 | `upload(file_content, filename, folder) -> str` | `SupabaseStorageProvider.upload()` | ✅ Match |
 | `get_url(file_path) -> str` | `SupabaseStorageProvider.get_url()` | ✅ Match |
-| `delete(file_path) -> bool` (impl extra) | `SupabaseStorageProvider.delete()` | ✅ Bonus |
+| `delete(file_path) -> bool` | `SupabaseStorageProvider.delete()` | ✅ Bonus method |
 
-### 8.2 Issues
+**Remaining issues (unchanged)**:
+- `get_url()` in `storage/supabase.py:25` is synchronous (`def get_url`) while `storage/base.py:16` declares it as `async def get_url`. This causes the storage provider to violate its own interface contract.
+- `storage/supabase.py:15` hardcodes `"content-type": "image/jpeg"` for all uploads. The actual content type from the uploaded file is not passed through.
 
-| Issue | File | Detail | Severity |
-|-------|------|--------|----------|
-| `get_url` not async | `app/storage/supabase.py:25` | Method signature is `def get_url` (sync) but interface declares `async` | LOW |
-| Hardcoded content-type | `app/storage/supabase.py:15` | `"content-type": "image/jpeg"` is hardcoded | MEDIUM |
-
----
-
-## 9. Error Handling
-
-**Score: 65%**
-
-### 9.1 Error Handling Pattern
-
-| Pattern | Design | Implementation | Status |
-|---------|--------|----------------|--------|
-| Unified exception handler | Designed (Section 6) | NOT implemented (no global handler) | ❌ |
-| HTTPException usage | Expected | Used per-endpoint via try/catch | ⚠️ Inconsistent |
-| 403 Forbidden | Role check | Implemented in `require_role` | ✅ |
-| 404 Not Found | Resource check | Partially (only task detail, notice detail) | ⚠️ |
-| 422 Validation | Pydantic auto | Handled by FastAPI/Pydantic | ✅ |
-
-### 9.2 Inconsistencies
-
-| Endpoint File | Issue | Severity |
-|---------------|-------|----------|
-| `tasks.py` | All errors become 500 with raw exception message | HIGH |
-| `admin.py` | No try/except at all on most endpoints | HIGH |
-| `notices.py` (public reads) | No auth required for list/detail (by design, but no rate limiting) | LOW |
-| `auth.py` | Login error always returns 401 regardless of cause | MEDIUM |
-| `users.py:change_password` | No `current_password` verification | HIGH |
-| Multiple files | Exception messages leak internal details (`str(e)`) | HIGH |
-
-### 9.3 Missing Error Handling
-
-| Scenario | Expected | Actual |
-|----------|----------|--------|
-| Global exception handler | FastAPI exception_handler decorator | Not implemented |
-| Structured error response | `{"error": {"code": "...", "message": "..."}}` | `{"detail": "..."}` (FastAPI default) |
-| Rate limiting | Mentioned nowhere | Not implemented |
-| Input sanitization | Expected for user input | Not implemented |
+**Score: 90%** -- No change. Same two minor issues persist.
 
 ---
 
-## 10. DI Pattern (Constructor Injection)
+### 3.7 Error Handling -- 65% -> 88%
 
-**Score: 60%**
+**What was fixed**: Global exception handler added. Password change now validates `current_password`. Endpoint error handling improved.
 
-### 10.1 Service Constructor Injection
+| Previously Deficient Item | v1.0 | v2.0 | Evidence |
+|---------------------------|:----:|:----:|----------|
+| Global exception handler | ❌ Missing | ✅ Added | `main.py:24-35` -- `@app.exception_handler(Exception)` returns `{"error": {"code": "INTERNAL_SERVER_ERROR", "message": "..."}}` |
+| Password `current_password` validation | ❌ Missing | ✅ Added | `user_service.py:20` -- calls `auth_repo.sign_in(email, current_password)` before changing |
+| Raw `str(e)` leaks in responses | ❌ Multiple files | Improved | See details below |
 
-| Service | Constructor Params | Uses DI | Status |
-|---------|-------------------|:-------:|--------|
-| `AuthService` | `auth_repo, user_repo` | YES | ✅ |
-| `AdminService` | `user_repo, org_repo, template_repo, task_repo, feedback_repo, notice_repo` | YES | ✅ |
-| `TaskService` | `task_repo` | YES | ✅ |
-| `CommentService` | `comment_repo` | YES | ✅ |
-| `AttendanceService` | `attendance_repo` | YES | ✅ |
-| `OpinionService` | `opinion_repo` | YES | ✅ |
-| `DashboardService` | `task_repo, notice_repo` | YES | ✅ |
-| `NotificationService` | `notification_repo` | YES | ✅ |
-| `FileService` | `storage_provider` | YES | ✅ |
-| `NoticeService` | `notice_repo` | YES | ✅ |
+**`str(e)` leak audit**:
 
-**All services use constructor injection** -- this is well-implemented.
+| File | Line | v1.0 | v2.0 | Status |
+|------|------|------|------|--------|
+| `tasks.py` | All | Raw `str(e)` in 500 responses | No try/except; errors fall through to global handler | ✅ Fixed |
+| `admin.py` | All | No try/except at all | No try/except; errors fall through to global handler | ✅ Acceptable |
+| `users.py:59` | `change_password` | No `current_password` check | Checks `str(e)` pattern to return sanitized message | ⚠️ Improved but pattern-matches on exception message text |
+| `auth.py:52` | `signup` | N/A | Uses `str(e).lower()` to detect "already"/"duplicate" | ⚠️ Acceptable heuristic for user-facing message |
+| `attendance.py:30,41` | `clock_in`/`clock_out` | N/A | `str(e)` on `ValueError` only (business validation messages) | ⚠️ Acceptable -- these are controlled ValueError messages |
 
-### 10.2 DI Container (`dependencies.py`) Issues
+**Error response format**:
 
-| Issue | Detail | Severity |
-|-------|--------|----------|
-| Inconsistent return types | `get_user_repo()` returns `SupabaseUserRepository` (concrete) instead of interface | MEDIUM |
-| Missing service factories | Only `get_task_service()` and `get_comment_service()` are registered as factories | HIGH |
-| Inline service creation | Most endpoints create services inline (e.g., `_get_admin_service()`, `_get_service()`) | MEDIUM |
-| Not using FastAPI `Depends` consistently | Some endpoints use `Depends(get_task_service)`, others create services manually | HIGH |
+| Scenario | v1.0 Format | v2.0 Format | Matches Spec? |
+|----------|-------------|-------------|:-------------:|
+| Unhandled 500 | `{"detail": "raw error text"}` | `{"error": {"code": "INTERNAL_SERVER_ERROR", "message": "..."}}` | ✅ |
+| Business validation (400) | Varies | `{"detail": "sanitized message"}` | ⚠️ Uses FastAPI default format, not error envelope |
+| Auth failure (401) | `{"detail": "..."}` | `{"detail": "..."}` | ⚠️ Same |
+| Not Found (404) | `{"detail": "..."}` | `{"detail": "..."}` | ⚠️ Same |
 
-### 10.3 Endpoint DI Usage
+**Remaining issues**:
+- HTTPException responses still use FastAPI's default `{"detail": "..."}` format rather than the structured `{"error": {"code": "...", "message": "..."}}` envelope. Only the global handler for uncaught 500 errors uses the structured format. Custom exception classes (e.g., `NotFoundException`, `ValidationException`) that produce structured responses would bring full consistency.
+- `attendance.py:30,41` still passes `str(e)` to client, but these are controlled `ValueError` messages from the service layer, so the risk is limited.
 
-| Endpoint File | Uses FastAPI `Depends` for service | Status |
-|---------------|:----------------------------------:|--------|
-| `tasks.py` | YES (`Depends(get_task_service)`) | ✅ |
-| `auth.py` | NO (manual `_get_auth_service()`) | ❌ |
-| `admin.py` | NO (manual `_get_admin_service()`) | ❌ |
-| `users.py` | NO (manual repo/service creation) | ❌ |
-| `notices.py` | NO (manual `_get_service()`) | ❌ |
-| `dashboard.py` | NO (inline `DashboardService(...)`) | ❌ |
-| `attendance.py` | NO (manual `_get_service()`) | ❌ |
-| `opinions.py` | NO (manual `_get_service()`) | ❌ |
-| `notifications.py` | NO (manual `_get_service()`) | ❌ |
-| `files.py` | NO (manual `_get_service()`) | ❌ |
-
-**Result**: Only `tasks.py` uses proper FastAPI dependency injection via `Depends()`. All other endpoint files create services manually, which works but is inconsistent with the DI design pattern.
+**Score: 88%** -- Global handler added, password security fixed, raw error leaks largely eliminated. HTTPException responses still use default FastAPI format rather than unified error envelope.
 
 ---
 
-## 11. Differences Summary
+### 3.8 DI Pattern -- 60% -> 95%
 
-### 11.1 Missing Features (Design/Spec YES, Implementation NO)
+**What was fixed**: All 11 service factories registered in `dependencies.py`. All 10 endpoint files now use `Depends()`.
 
-| ID | Item | Design Location | Description |
-|----|------|-----------------|-------------|
-| M-01 | `current_password` validation | api-spec.md:209 | Password change endpoint does not verify current password |
-| M-02 | `is_important` field on Notice | api-spec.md:438 | Notice schema missing `is_important` boolean field |
-| M-03 | `verification_type`/`verification_data` in ChecklistItem schema | api-spec.md:319 | Fields exist in request but not in Pydantic schema |
-| M-04 | `user_name`, `is_manager` in Comment response | api-spec.md:358 | Comment schema lacks user display fields |
-| M-05 | `profile_image` in User schema | api-spec.md:178 | User profile does not support profile image field |
-| M-06 | `work_hours` calculation in attendance | api-spec.md:565 | Clock-out response lacks work hours calculation |
-| M-07 | `completion_rate` in dashboard task_summary | api-spec.md:491 | Dashboard missing completion rate percentage |
-| M-08 | `total_hours`, `late_count` in attendance summary | api-spec.md:615 | History summary uses different field structure |
-| M-09 | `unread_only` query filter on notifications | api-spec.md:680 | GET notifications does not support `unread_only` param |
-| M-10 | Global exception handler | design.md Section 6 | No unified FastAPI exception handler registered |
-| M-11 | 7/11 repository interfaces | design.md Section 4.1 | Most repositories lack ABC interfaces |
+**Service factories in `dependencies.py`**:
 
-### 11.2 Added Features (Design/Spec NO, Implementation YES)
+| Service | v1.0 Factory | v2.0 Factory | Evidence |
+|---------|:------------:|:------------:|----------|
+| AuthService | ❌ Manual helper | ✅ `get_auth_service()` | `dependencies.py:78` |
+| TaskService | ✅ `get_task_service()` | ✅ `get_task_service()` | `dependencies.py:81` |
+| CommentService | ✅ `get_comment_service()` | ✅ `get_comment_service()` | `dependencies.py:84` |
+| AdminService | ❌ Manual helper | ✅ `get_admin_service()` | `dependencies.py:87` |
+| NoticeService | ❌ Manual helper | ✅ `get_notice_service()` | `dependencies.py:97` |
+| DashboardService | ❌ Inline creation | ✅ `get_dashboard_service()` | `dependencies.py:100` |
+| AttendanceService | ❌ Manual helper | ✅ `get_attendance_service()` | `dependencies.py:103` |
+| OpinionService | ❌ Manual helper | ✅ `get_opinion_service()` | `dependencies.py:106` |
+| NotificationService | ❌ Manual helper | ✅ `get_notification_service()` | `dependencies.py:109` |
+| FileService | ❌ Manual helper | ✅ `get_file_service()` | `dependencies.py:112` |
+| UserService | ❌ Did not exist | ✅ `get_user_service()` | `dependencies.py:115` |
+
+**Endpoint `Depends()` usage**:
+
+| Endpoint File | v1.0 | v2.0 | Evidence |
+|---------------|:----:|:----:|----------|
+| `tasks.py` | ✅ `Depends(get_task_service)` | ✅ | Lines 32, 48, 60, 73, 83, 94, 106, 118, 142, 153, 164 |
+| `auth.py` | ❌ Manual `_get_auth_service()` | ✅ `Depends(get_auth_service)` | Lines 32, 40, 61, 69, 79 |
+| `admin.py` | ❌ Manual `_get_admin_service()` | ✅ `Depends(get_admin_service)` | Lines 33, 37, 41, 48, 52, 56, 60, 68, 72, 76, 84, 88, 92, 100, 107, 115, 123, 133 |
+| `users.py` | ❌ Manual repo/service creation | ✅ `Depends(get_user_service)` | Lines 31, 45 |
+| `notices.py` | ❌ Manual `_get_service()` | ✅ `Depends(get_notice_service)` | Lines 17, 25, 37, 48, 57, 67 |
+| `dashboard.py` | ❌ Inline creation | ✅ `Depends(get_dashboard_service)` | Line 13 |
+| `attendance.py` | ❌ Manual `_get_service()` | ✅ `Depends(get_attendance_service)` | Lines 16, 25, 36, 49 |
+| `opinions.py` | ❌ Manual `_get_service()` | ✅ `Depends(get_opinion_service)` | Lines 16, 24 |
+| `notifications.py` | ❌ Manual `_get_service()` | ✅ `Depends(get_notification_service)` | Lines 16, 24, 33 |
+| `files.py` | ❌ Manual `_get_service()` | ✅ `Depends(get_file_service)` | Lines 24, 35 |
+
+**Result: 10/10 endpoint files use `Depends()` for service injection** (previously 1/10).
+
+**Remaining issues**:
+- Repository factory return types are inconsistent: `get_user_repo()` returns `SupabaseUserRepository` (concrete), `get_task_repo()` returns `TaskRepository` (concrete), while others correctly return interfaces (`IOrganizationRepository`, `ICommentRepository`, etc.).
+- `TaskService` and `AdminService` constructors accept concrete types (`TaskRepository`, `SupabaseUserRepository`) instead of interfaces for some params.
+
+**Score: 95%** -- All endpoint files use `Depends()`, all service factories centralized. Minor type-hint inconsistencies on 2 repo factories and 2 service constructors.
+
+---
+
+## 4. Cleanup Verification
+
+| Item | v1.0 | v2.0 | Evidence |
+|------|:----:|:----:|----------|
+| Empty `app/crud/` directory | ⚠️ Existed (legacy) | ✅ Removed | `Glob("app/crud/**/*")` returns no files |
+| Enums in `models/enums.py` | ⚠️ Only 3 enums | ✅ 6 enums | `AttendanceStatus`, `NotificationType`, `OpinionStatus` added |
+| `UserService` exists | ❌ Did not exist | ✅ Created | `app/services/user_service.py` with `get_profile`, `update_profile`, `change_password` |
+
+---
+
+## 5. Remaining Gaps (v2.0)
+
+### 5.1 Items Still Missing from Spec
+
+| ID | Item | Spec Location | Description | Severity |
+|----|------|--------------|-------------|----------|
+| R-01 | `unread_only` filter not wired | api-spec:680 | Parameter accepted at endpoint but not passed to service/repo | LOW |
+| R-02 | Opinions URL mismatch | api-spec:653 | Spec: `GET /opinions/me`, Impl: `GET /opinions/` | LOW |
+| R-03 | Dashboard missing `user` object | api-spec:481 | Spec response includes `user` section, impl does not | LOW |
+| R-04 | Dashboard `daily_progress` field names | api-spec:505 | Spec: `total_checklist_items`, Impl: `total_items` | LOW |
+| R-05 | Attendance history summary fields | api-spec:615 | Spec: `total_hours`, `late_count`; Impl: `completed`, `incomplete` | MEDIUM |
+| R-06 | Presigned URL response fields | api-spec:791 | Spec: `upload_url, file_url, expires_in`; Impl: `url` only | MEDIUM |
+| R-07 | NotificationType enum mismatch | api-spec:705 | Spec: 5 specific types; Enum: different 5 types | LOW |
+| R-08 | `UserRole`/`UserStatus` not in `models/enums.py` | design convention | Enums split between `schemas/user.py` and `models/enums.py` | LOW |
+| R-09 | `OpinionStatus` enum not used in schema | opinion.py:9 | Schema uses plain `str`, enum exists but is not imported | LOW |
+| R-10 | Repos use module-level supabase import | design Section 4 | 10/11 repos use global import instead of constructor injection | LOW |
+
+### 5.2 Items Added Beyond Spec (Unchanged from v1.0)
 
 | ID | Item | Implementation Location | Description |
 |----|------|------------------------|-------------|
-| A-01 | Notice confirmation flow | `app/api/endpoints/notices.py:36` | `POST /notices/{id}/confirm` endpoint not in spec |
-| A-02 | Notice confirmations table join | `app/repositories/feedback_notice.py:30` | Selects `notice_confirmations(*)` in notice detail |
-| A-03 | Staff rejection endpoint | `app/api/endpoints/admin.py:56` | `PATCH /admin/staff/{id}/reject` not in original spec |
-| A-04 | Admin feedbacks CRUD | `app/api/endpoints/admin.py:147-158` | Feedback endpoints not in main API spec |
-| A-05 | Checklist log auto-creation | `app/services/task_service.py:22-30` | Automatic log record on checklist toggle |
-| A-06 | `login_id` field on User | `app/schemas/user.py:21` | Extra identifier field not in spec |
-| A-07 | `language` field on User | `app/schemas/user.py:26` | Internationalization field not in spec |
-
-### 11.3 Changed Features (Design != Implementation)
-
-| ID | Item | Design/Spec | Implementation | Impact |
-|----|------|-------------|----------------|--------|
-| C-01 | File upload response fields | `file_url, file_name, file_size, content_type` | `filename, original_filename, url, folder` | HIGH |
-| C-02 | Presigned URL method | `POST` with request body | `GET` with query params | MEDIUM |
-| C-03 | Opinions list URL | `GET /opinions/me` | `GET /opinions/` | LOW |
-| C-04 | Dashboard task_summary keys | `total_tasks, pending_tasks, completed_tasks` | `total, todo, done, in_progress` | MEDIUM |
-| C-05 | Attendance history summary | `total_hours, late_count` | `completed, incomplete` | MEDIUM |
-| C-06 | Dashboard response | Includes `user` object | No `user` object in response | LOW |
+| A-01 | Notice confirmation flow | `notices.py:33` | `POST /notices/{id}/confirm` -- not in spec |
+| A-02 | Staff rejection endpoint | `admin.py:40` | `PATCH /admin/staff/{id}/reject` -- not in original spec |
+| A-03 | Admin feedbacks CRUD | `admin.py:121-134` | Feedback endpoints not in main API spec |
+| A-04 | Checklist log auto-creation | `task_service.py:40-48` | Automatic log record on checklist toggle |
+| A-05 | `login_id` field on User | `user.py:20` | Extra identifier field |
+| A-06 | `language` field on User | `user.py:26` | Internationalization field |
 
 ---
 
-## 12. Clean Architecture Compliance
+## 6. Architecture & Convention Compliance
 
-**Score: 85%**
+### 6.1 Layer Structure -- Verified
 
-### 12.1 Layer Assignment Verification
+| Layer | Design Location | Actual Location | Status |
+|-------|----------------|-----------------|--------|
+| API/Presentation | `app/api/` | `app/api/endpoints/` (10 files) | ✅ |
+| Application/Service | `app/services/` | `app/services/` (11 files) | ✅ |
+| Domain/Model | `app/models/`, `app/schemas/` | Both present and populated | ✅ |
+| Infrastructure/Repository | `app/repositories/`, `app/storage/` | Both present with interfaces | ✅ |
+| DI Container | `app/core/dependencies.py` | Single point of wiring | ✅ |
 
-| Component | Designed Layer | Actual Location | Status |
-|-----------|---------------|-----------------|--------|
-| Auth endpoints | Presentation | `app/api/endpoints/auth.py` | ✅ |
-| AuthService | Application | `app/services/auth_service.py` | ✅ |
-| IAuthRepository | Infrastructure | `app/repositories/auth.py` | ✅ |
-| User schema | Domain | `app/schemas/user.py` | ✅ |
-| Enums | Domain | `app/models/enums.py` | ✅ |
-| Supabase client | Infrastructure | `app/core/supabase.py` | ✅ |
-| DI Container | Infrastructure | `app/core/dependencies.py` | ✅ |
-| Security middleware | Presentation | `app/core/security.py` | ✅ |
+### 6.2 Dependency Direction -- Clean
 
-### 12.2 Dependency Direction Violations
+| Source Layer | Target Layer | v1.0 Violations | v2.0 Violations |
+|-------------|-------------|:----------------:|:----------------:|
+| Presentation -> Application | Expected | 0 | 0 |
+| Presentation -> Infrastructure | Forbidden | 3 files (`tasks.py`, `notices.py`, `users.py`) | 0 |
+| Application -> Domain | Expected | 0 | 0 |
+| Application -> Infrastructure | Expected | 0 | 0 |
+| Domain -> Any | Forbidden | 0 | 0 |
+| Infrastructure -> Domain | Expected | 0 | 0 |
 
-| Source File | Source Layer | Imports From | Target Layer | Violation? |
-|------------|-------------|--------------|--------------|:----------:|
-| `security.py` | Presentation | `dependencies.py` | Infrastructure | NO (acceptable for DI) |
-| `admin.py` | Presentation | `admin_service.py` | Application | ✅ Correct |
-| `tasks.py` | Presentation | `task_service.py` + accesses `task_repo` | Application->Infrastructure | ⚠️ Leaky |
-| `notices.py` | Presentation | `get_notice_repo()` directly | Infrastructure | ❌ Violation |
-| `users.py` | Presentation | `get_user_repo()` directly | Infrastructure | ❌ Violation |
+### 6.3 Naming Convention -- 100% Compliance
 
----
-
-## 13. Convention Compliance
-
-**Score: 80%**
-
-### 13.1 Naming Convention
-
-| Category | Convention | Compliance | Violations |
-|----------|-----------|:----------:|------------|
-| Modules | snake_case | 100% | None |
-| Classes | PascalCase | 100% | None |
-| Functions | snake_case | 100% | None |
-| Variables | snake_case | 100% | None |
-| Constants | UPPER_SNAKE_CASE | N/A | None observed |
-| Folders | kebab-case or snake_case | 100% | Python standard (snake_case) used |
-
-### 13.2 File Organization
-
-| Expected | Exists | Status |
-|----------|:------:|--------|
-| `app/api/endpoints/` | YES | ✅ |
-| `app/services/` | YES | ✅ |
-| `app/repositories/` | YES | ✅ |
-| `app/schemas/` | YES | ✅ |
-| `app/models/` | YES | ✅ |
-| `app/storage/` | YES | ✅ |
-| `app/core/` | YES | ✅ |
-
-### 13.3 Issues
-
-| Issue | Detail |
-|-------|--------|
-| Enums split across files | `TaskType`, `Priority`, `TaskStatus` in `models/enums.py` but `UserRole`, `UserStatus` in `schemas/user.py` |
-| `crud/` directory empty | `app/crud/__init__.py` exists but directory contains no other files (legacy leftover) |
-| Inconsistent schema location for Comment | Comment schemas are inside `schemas/task.py` instead of a separate `schemas/comment.py` |
+| Category | Convention | Status |
+|----------|-----------|:------:|
+| Modules | snake_case | ✅ |
+| Classes | PascalCase | ✅ |
+| Functions | snake_case | ✅ |
+| Variables | snake_case | ✅ |
+| Folders | snake_case (Python standard) | ✅ |
 
 ---
 
-## 14. Overall Match Rate
+## 7. Overall Match Rate
 
 ```
 +-----------------------------------------------+
-|  Overall Match Rate: 79.8%                    |
+|  Overall Match Rate: 93.5%                     |
 +-----------------------------------------------+
-|  Architecture (Repository Pattern):  88%       |
+|  Architecture (Repository Pattern):  97%       |
 |  Supabase Decoupling:               95%       |
-|  API Coverage:                       83%       |
-|  Data Models:                        85%       |
-|  Repository Abstraction:             72%       |
+|  API Coverage:                       93%       |
+|  Data Models:                        95%       |
+|  Repository Abstraction:             95%       |
 |  Storage Abstraction:                90%       |
-|  Error Handling:                     65%       |
-|  DI Pattern:                         60%       |
+|  Error Handling:                     88%       |
+|  DI Pattern:                         95%       |
 +-----------------------------------------------+
-|  Matched Items:      42                        |
-|  Missing Items:      11 (M-01 through M-11)   |
-|  Added Items:         7 (A-01 through A-07)   |
-|  Changed Items:       6 (C-01 through C-06)   |
+|  Previous Score (v1.0):              79.8%     |
+|  Current Score (v2.0):               93.5%     |
+|  Improvement:                       +13.7%     |
++-----------------------------------------------+
+|  Remaining Gaps:    10 (R-01 through R-10)     |
+|  Added Features:     6 (A-01 through A-06)     |
 +-----------------------------------------------+
 ```
 
 ---
 
-## 15. Recommended Actions
+## 8. Recommended Actions (Remaining)
 
-### 15.1 Immediate (Priority HIGH)
+### 8.1 Optional Improvements (to reach ~97%)
 
-| # | Action | Files to Change | Impact |
-|---|--------|----------------|--------|
-| 1 | **Add repository interfaces** for all 9 missing repositories (CommentRepository, AttendanceRepository, etc.) using ABC pattern from `IRepository` or custom interfaces | `app/repositories/*.py` | Enables swapping implementations for migration |
-| 2 | **Fix endpoint-to-repo leaks**: Ensure ALL endpoints go through services, never call repositories directly | `app/api/endpoints/tasks.py`, `admin.py`, `notices.py`, `users.py` | Architecture compliance |
-| 3 | **Add `current_password` validation** to password change | `app/api/endpoints/users.py`, `app/services/auth_service.py` | Security vulnerability |
-| 4 | **Register global exception handler** in `main.py` | `app/main.py` | Error consistency |
-| 5 | **Fix file upload response format** to match API spec | `app/services/file_service.py`, `app/api/endpoints/files.py` | API contract |
+| # | Action | Files | Impact |
+|---|--------|-------|--------|
+| 1 | Wire `unread_only` through to notification service/repo | `notifications.py`, `notification_service.py`, `notification.py` | API spec compliance |
+| 2 | Enrich presigned URL response with `upload_url`, `file_url`, `expires_in` | `file_service.py`, `files.py` | API spec compliance |
+| 3 | Add `total_hours` and `late_count` to attendance history summary | `attendance_service.py` | API spec compliance |
+| 4 | Add `user` object to dashboard response | `dashboard_service.py` | API spec compliance |
+| 5 | Align `NotificationType` enum values with API spec | `models/enums.py` | Data consistency |
 
-### 15.2 Short-term (Priority MEDIUM)
-
-| # | Action | Files to Change | Impact |
-|---|--------|----------------|--------|
-| 6 | Add missing schema fields: `is_important` (Notice), `verification_type/data` (ChecklistItem), `profile_image` (User), `user_name/is_manager` (Comment) | `app/schemas/*.py` | Data completeness |
-| 7 | Standardize DI in all endpoints: register all services in `dependencies.py` and use `Depends()` consistently | `app/core/dependencies.py`, all endpoint files | Consistency |
-| 8 | Inject supabase client via constructor in all repositories (like `SupabaseAuthRepository`) instead of module-level import | All `app/repositories/*.py` | Testability |
-| 9 | Add missing enums: `AttendanceStatus`, `NotificationType`, `OpinionStatus` to `models/enums.py` | `app/models/enums.py`, related schemas | Type safety |
-| 10 | Fix presigned URL endpoint to match spec (POST with body instead of GET with query) | `app/api/endpoints/files.py` | API contract |
-
-### 15.3 Long-term (Priority LOW)
+### 8.2 Long-term Cleanup
 
 | # | Action | Impact |
 |---|--------|--------|
-| 11 | Add `work_hours` calculation to attendance clock-out response | Data richness |
-| 12 | Add `unread_only` filter to notifications endpoint | API spec compliance |
-| 13 | Consolidate enums into `models/enums.py` (move `UserRole`, `UserStatus` out of `schemas/user.py`) | Code organization |
-| 14 | Remove empty `app/crud/` directory | Cleanup |
-| 15 | Add dashboard `user` context and `completion_rate` to match spec exactly | API spec compliance |
-| 16 | Update design doc to reflect added features (A-01 through A-07) | Documentation |
-| 17 | Stop leaking raw exception messages (`str(e)`) in production responses | Security |
+| 6 | Move `UserRole`/`UserStatus` to `models/enums.py` for consistency | Code organization |
+| 7 | Use `OpinionStatus` enum in `schemas/opinion.py` instead of plain string | Type safety |
+| 8 | Inject supabase client via constructor in all repositories (like `SupabaseAuthRepository`) | Testability |
+| 9 | Use structured error envelope `{"error": {...}}` for all HTTPException responses, not just global handler | Error consistency |
+| 10 | Fix `SupabaseStorageProvider.get_url()` to be async matching the interface | Interface contract |
 
 ---
 
-## 16. Design Document Updates Needed
+## 9. Conclusion
 
-The following items should be reflected in the design document to match implementation:
+The Task Server V2 implementation has improved from **79.8% to 93.5% overall match rate**, crossing the 90% threshold. All 4 critical-path items from the v1.0 analysis have been addressed:
 
-- [ ] Add `login_id` and `language` fields to User entity
-- [ ] Add `POST /notices/{id}/confirm` endpoint
-- [ ] Add `PATCH /admin/staff/{id}/reject` endpoint
-- [ ] Add admin feedbacks API endpoints
-- [ ] Document checklist log auto-creation business rule
-- [ ] Document notice confirmation flow
-- [ ] Update Opinions endpoint URL (`/opinions/` vs `/opinions/me`)
+1. **Repository interfaces**: 11/11 (was 2/11) -- +23% to Repository Abstraction
+2. **Endpoint-to-repo leaks fixed**: 0 violations (was 4 files) -- +9% to Architecture
+3. **DI pattern standardized**: 10/10 endpoints use `Depends()` (was 1/10) -- +35% to DI Pattern
+4. **Global error handler**: Added with structured format -- +23% to Error Handling
 
----
+Additionally, schema completeness improved (+10%), API coverage improved (+10%), and the legacy `crud/` directory was removed.
 
-## 17. Conclusion
-
-The Task Server V2 implementation achieves **79.8% overall match rate** against the design document and API specification. The strongest areas are **Supabase decoupling (95%)** and **storage abstraction (90%)**, demonstrating that the core architectural goal of provider-agnostic design is largely met. The weakest areas are **DI pattern consistency (60%)** and **error handling (65%)**, which require focused improvement.
-
-**Critical path to 90%+ match rate:**
-1. Add repository interfaces for the 9 missing repositories (+8% to Repository Abstraction)
-2. Fix endpoint-to-repo leaks in 4 endpoint files (+5% to Architecture)
-3. Standardize DI pattern across all endpoints (+15% to DI Pattern)
-4. Add global error handler and fix error response inconsistencies (+10% to Error Handling)
-
-Completing these 4 actions would bring the overall score to approximately **88-92%**.
+The remaining 10 gaps (R-01 through R-10) are all LOW or MEDIUM severity, primarily consisting of minor field name differences in secondary response objects and enum placement inconsistencies. No further iteration is required to meet the 90% quality gate.
 
 ---
 
@@ -665,4 +429,5 @@ Completing these 4 actions would bring the overall score to approximately **88-9
 | Version | Date | Changes | Author |
 |---------|------|---------|--------|
 | 0.1 | 2026-02-12 | Previous analysis (92% claim, high-level) | bkit |
-| 1.0 | 2026-02-12 | Comprehensive 8-area deep analysis | bkit-gap-detector |
+| 1.0 | 2026-02-12 | Comprehensive 8-area deep analysis (79.8%) | bkit-gap-detector |
+| 2.0 | 2026-02-12 | Re-analysis after targeted improvements (93.5%) | bkit-gap-detector |

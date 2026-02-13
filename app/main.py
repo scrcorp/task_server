@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.api.endpoints import tasks, notices, auth, admin, users, dashboard, attendance, opinions, notifications, files
 
@@ -17,6 +18,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ── Global Exception Handler ────────────────────────
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """예상치 못한 에러를 통일된 형식으로 반환합니다."""
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "서버 내부 오류가 발생했습니다.",
+            }
+        },
+    )
+
 
 # 라우터 등록: 각 기능별로 분리된 API 엔드포인트를 연결합니다.
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["Auth"])

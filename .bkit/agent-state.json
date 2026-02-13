@@ -1,25 +1,14 @@
 {
   "version": "1.0",
-  "enabled": true,
+  "enabled": false,
   "teamName": "",
   "feature": "repositories",
   "pdcaPhase": "do",
   "orchestrationPattern": "leader",
   "ctoAgent": "opus",
   "startedAt": "2026-02-12T09:17:17.290Z",
-  "lastUpdated": "2026-02-12T09:22:59.032Z",
-  "teammates": [
-    {
-      "name": "a43babd",
-      "role": "bkit:gap-detector",
-      "model": "sonnet",
-      "status": "completed",
-      "currentTask": null,
-      "taskId": null,
-      "startedAt": "2026-02-12T09:17:17.291Z",
-      "lastActivityAt": "2026-02-12T09:21:30.439Z"
-    }
-  ],
+  "lastUpdated": "2026-02-13T00:07:06.923Z",
+  "teammates": [],
   "progress": {
     "totalTasks": 0,
     "completedTasks": 0,

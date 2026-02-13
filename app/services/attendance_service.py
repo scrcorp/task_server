@@ -40,12 +40,18 @@ class AttendanceService:
         if existing.get("clock_out"):
             raise ValueError("이미 퇴근 기록이 있습니다.")
 
+        clock_out_time = datetime.utcnow()
+        clock_in_time = datetime.fromisoformat(existing["clock_in"].replace("Z", "+00:00").replace("+00:00", ""))
+        work_hours = round((clock_out_time - clock_in_time).total_seconds() / 3600, 2)
+
         data = {
-            "clock_out": datetime.utcnow().isoformat(),
+            "clock_out": clock_out_time.isoformat(),
             "status": "completed",
         }
         record = await self.attendance_repo.clock_out(existing["id"], data)
-        return AttendanceRecord(**record)
+        result = AttendanceRecord(**record)
+        result.work_hours = work_hours
+        return result
 
     async def get_monthly_history(self, user_id: str, year: int, month: int) -> AttendanceHistoryResponse:
         records = await self.attendance_repo.get_history(user_id, year, month)

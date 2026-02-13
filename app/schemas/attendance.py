@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
+from app.models.enums import AttendanceStatus
 
 
 class AttendanceRecord(BaseModel):
@@ -9,7 +10,8 @@ class AttendanceRecord(BaseModel):
     clock_in: datetime
     clock_out: Optional[datetime] = None
     location: Optional[str] = None
-    status: str  # not_started, on_duty, off_duty, completed
+    status: AttendanceStatus = AttendanceStatus.NOT_STARTED
+    work_hours: Optional[float] = None
 
     class Config:
         from_attributes = True

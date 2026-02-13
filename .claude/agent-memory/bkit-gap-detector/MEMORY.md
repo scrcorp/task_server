@@ -13,15 +13,26 @@
 - Base interfaces: `app/repositories/base.py`, `app/storage/base.py`
 - Auth interface: `app/repositories/auth.py` (IAuthRepository - best example of proper DI)
 
-## Known Issues (as of 2026-02-12, v1.0 analysis)
-- Overall match rate: 79.8%
-- 9/11 repositories lack ABC interfaces
-- 9/10 endpoint files bypass FastAPI Depends() for service injection
-- Endpoints leak into repository layer (tasks.py, admin.py, notices.py, users.py)
-- No global exception handler registered
-- Missing schema fields: is_important, verification_type, profile_image, work_hours
-- Enums split: TaskType in models/enums.py, UserRole in schemas/user.py
-- Empty `app/crud/` directory is legacy leftover
+## Current Status (v2.0 analysis, 2026-02-12)
+- Overall match rate: **93.5%** (up from 79.8%)
+- 11/11 repositories have ABC interfaces
+- 10/10 endpoint files use FastAPI Depends()
+- All endpoint-to-repo leaks fixed
+- Global exception handler registered in main.py
+- All schema fields added (is_important, verification_type, profile_image, work_hours, etc.)
+- 6/8 enums in models/enums.py (UserRole/UserStatus still in schemas/user.py)
+- Empty `app/crud/` removed
+
+## Remaining Gaps (10 items, all LOW/MEDIUM)
+- R-01: unread_only param accepted but not wired to service/repo
+- R-02: Opinions URL /opinions/ vs spec /opinions/me
+- R-03/R-04: Dashboard missing user object + field name diffs
+- R-05: Attendance history summary missing total_hours, late_count
+- R-06: Presigned URL response missing upload_url, file_url, expires_in
+- R-07: NotificationType enum values differ from spec
+- R-08: UserRole/UserStatus still in schemas/user.py
+- R-09: OpinionStatus enum exists but not used in schema
+- R-10: 10/11 repos use module-level supabase import (not constructor)
 
 ## Analysis Methodology
 - Always grep for `supabase` imports to verify decoupling
@@ -29,3 +40,5 @@
 - Compare every endpoint URL + method + response fields against spec
 - Verify all repositories extend IRepository or have custom ABC interface
 - Check constructor injection vs module-level imports in repositories
+- Verify `str(e)` leaks in endpoint error handlers
+- Confirm Depends() usage in all endpoint function signatures

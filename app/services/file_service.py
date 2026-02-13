@@ -12,10 +12,10 @@ class FileService:
 
         url = await self.storage.upload(file_content, unique_name, folder)
         return {
-            "filename": unique_name,
-            "original_filename": original_filename,
-            "url": url,
-            "folder": folder,
+            "file_url": url,
+            "file_name": unique_name,
+            "file_size": len(file_content),
+            "content_type": f"application/{ext}" if ext else "application/octet-stream",
         }
 
     async def get_presigned_url(self, file_path: str) -> str:
