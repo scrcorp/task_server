@@ -8,13 +8,17 @@ from app.schemas.user import User
 router = APIRouter()
 
 
-# ── Request Schemas ──────────────────────────────────
+# -- Request Schemas --
 
 class PresignedUrlRequest(BaseModel):
     file_path: str
 
 
-# ── Endpoints ────────────────────────────────────────
+class DeleteFileRequest(BaseModel):
+    file_path: str
+
+
+# -- Endpoints --
 
 @router.post("/upload")
 async def upload_file(
@@ -24,7 +28,11 @@ async def upload_file(
     service: FileService = Depends(get_file_service),
 ):
     content = await file.read()
-    result = await service.upload_file(content, file.filename, folder)
+    try:
+        result = await service.upload_file(content, file.filename, folder)
+    except ValueError as e:
+        status = 413 if "size" in str(e).lower() else 400
+        raise HTTPException(status_code=status, detail=str(e))
     return result
 
 
@@ -36,3 +44,13 @@ async def get_presigned_url(
 ):
     url = await service.get_presigned_url(body.file_path)
     return {"url": url}
+
+
+@router.delete("/delete")
+async def delete_file(
+    body: DeleteFileRequest,
+    current_user: User = Depends(get_current_user),
+    service: FileService = Depends(get_file_service),
+):
+    await service.delete_file(body.file_path)
+    return {"message": "File deleted successfully."}
