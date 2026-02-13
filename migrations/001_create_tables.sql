@@ -80,9 +80,9 @@ CREATE TABLE groups (
 CREATE INDEX idx_groups_group_type_id ON groups(group_type_id);
 
 -- ============================================================
--- 6. user_profiles - 사용자 프로필 (→ companies)
+-- 6. users - 사용자 프로필 (→ companies)
 -- ============================================================
-CREATE TABLE user_profiles (
+CREATE TABLE users (
     id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id      uuid        NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
     email           varchar     NOT NULL,
@@ -98,23 +98,23 @@ CREATE TABLE user_profiles (
     created_at      timestamptz NOT NULL DEFAULT now(),
     updated_at      timestamptz NOT NULL DEFAULT now(),
 
-    CONSTRAINT uq_user_profiles_email    UNIQUE (email),
-    CONSTRAINT uq_user_profiles_login_id UNIQUE (login_id),
-    CONSTRAINT chk_user_profiles_role    CHECK (role IN ('staff', 'manager', 'admin')),
-    CONSTRAINT chk_user_profiles_status  CHECK (status IN ('pending', 'active', 'inactive'))
+    CONSTRAINT uq_users_email    UNIQUE (email),
+    CONSTRAINT uq_users_login_id UNIQUE (login_id),
+    CONSTRAINT chk_users_role    CHECK (role IN ('staff', 'manager', 'admin')),
+    CONSTRAINT chk_users_status  CHECK (status IN ('pending', 'active', 'inactive'))
 );
 
-CREATE INDEX idx_user_profiles_company_id ON user_profiles(company_id);
-CREATE INDEX idx_user_profiles_login_id   ON user_profiles(login_id);
-CREATE INDEX idx_user_profiles_role       ON user_profiles(role);
-CREATE INDEX idx_user_profiles_status     ON user_profiles(status);
+CREATE INDEX idx_users_company_id ON users(company_id);
+CREATE INDEX idx_users_login_id   ON users(login_id);
+CREATE INDEX idx_users_role       ON users(role);
+CREATE INDEX idx_users_status     ON users(status);
 
 -- ============================================================
--- 7. email_verification_codes - 이메일 인증 코드 (→ user_profiles)
+-- 7. email_verification_codes - 이메일 인증 코드 (→ users)
 -- ============================================================
 CREATE TABLE email_verification_codes (
     id          uuid            PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id     uuid            NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+    user_id     uuid            NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     email       varchar(255)    NOT NULL,
     code        varchar(6)      NOT NULL,
     expires_at  timestamptz     NOT NULL,
@@ -192,7 +192,7 @@ CREATE INDEX idx_daily_checklists_template_id  ON daily_checklists(template_id);
 CREATE INDEX idx_daily_checklists_date         ON daily_checklists(date);
 
 -- ============================================================
--- 12. assignments - 할당 업무 (→ companies, branches, user_profiles)
+-- 12. assignments - 할당 업무 (→ companies, branches, users)
 -- ============================================================
 CREATE TABLE assignments (
     id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -204,7 +204,7 @@ CREATE TABLE assignments (
     status      varchar     NOT NULL DEFAULT 'todo',
     due_date    timestamptz,
     recurrence  jsonb,
-    created_by  uuid        REFERENCES user_profiles(id) ON DELETE SET NULL,
+    created_by  uuid        REFERENCES users(id) ON DELETE SET NULL,
     created_at  timestamptz NOT NULL DEFAULT now(),
     updated_at  timestamptz NOT NULL DEFAULT now(),
 
@@ -219,11 +219,11 @@ CREATE INDEX idx_assignments_due_date   ON assignments(due_date);
 CREATE INDEX idx_assignments_created_by ON assignments(created_by);
 
 -- ============================================================
--- 13. assignment_assignees - 할당 담당자 (→ assignments, user_profiles)
+-- 13. assignment_assignees - 할당 담당자 (→ assignments, users)
 -- ============================================================
 CREATE TABLE assignment_assignees (
     assignment_id   uuid        NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
-    user_id         uuid        NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+    user_id         uuid        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     assigned_at     timestamptz NOT NULL DEFAULT now(),
 
     PRIMARY KEY (assignment_id, user_id)
@@ -232,12 +232,12 @@ CREATE TABLE assignment_assignees (
 CREATE INDEX idx_assignees_user_id ON assignment_assignees(user_id);
 
 -- ============================================================
--- 14. comments - 댓글 (→ assignments, user_profiles)
+-- 14. comments - 댓글 (→ assignments, users)
 -- ============================================================
 CREATE TABLE comments (
     id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
     assignment_id   uuid        NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
-    user_id         uuid        NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+    user_id         uuid        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content         text,
     content_type    varchar     NOT NULL DEFAULT 'text',
     attachments     jsonb,
@@ -252,12 +252,12 @@ CREATE INDEX idx_comments_assignment_id ON comments(assignment_id);
 CREATE INDEX idx_comments_created_at    ON comments(created_at);
 
 -- ============================================================
--- 15. attendance - 출퇴근 기록 (→ companies, user_profiles, branches)
+-- 15. attendance - 출퇴근 기록 (→ companies, users, branches)
 -- ============================================================
 CREATE TABLE attendance (
     id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id  uuid        NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-    user_id     uuid        NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+    user_id     uuid        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     branch_id   uuid        REFERENCES branches(id) ON DELETE SET NULL,
     clock_in    timestamptz,
     clock_out   timestamptz,
@@ -273,12 +273,12 @@ CREATE INDEX idx_attendance_clock_in     ON attendance(clock_in);
 CREATE INDEX idx_attendance_branch_id    ON attendance(branch_id);
 
 -- ============================================================
--- 16. opinions - 건의사항 (→ companies, user_profiles)
+-- 16. opinions - 건의사항 (→ companies, users)
 -- ============================================================
 CREATE TABLE opinions (
     id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id  uuid        NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-    user_id     uuid        NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+    user_id     uuid        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content     text        NOT NULL,
     status      varchar     NOT NULL DEFAULT 'submitted',
     created_at  timestamptz NOT NULL DEFAULT now(),
@@ -291,12 +291,12 @@ CREATE INDEX idx_opinions_user_id    ON opinions(user_id);
 CREATE INDEX idx_opinions_status     ON opinions(status);
 
 -- ============================================================
--- 17. notifications - 알림 (→ companies, user_profiles)
+-- 17. notifications - 알림 (→ companies, users)
 -- ============================================================
 CREATE TABLE notifications (
     id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id      uuid        NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-    user_id         uuid        NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+    user_id         uuid        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     type            varchar     NOT NULL,
     title           varchar     NOT NULL,
     message         text        NOT NULL,
@@ -306,7 +306,7 @@ CREATE TABLE notifications (
     is_read         boolean     NOT NULL DEFAULT false,
     created_at      timestamptz NOT NULL DEFAULT now(),
 
-    CONSTRAINT chk_notifications_type CHECK (type IN ('task_assigned', 'task_updated', 'notice', 'feedback', 'system'))
+    CONSTRAINT chk_notifications_type CHECK (type IN ('task_assigned', 'task_updated', 'notice', 'feedback', 'comment', 'system'))
 );
 
 CREATE INDEX idx_notifications_company_user ON notifications(company_id, user_id);
@@ -314,13 +314,13 @@ CREATE INDEX idx_notifications_unread       ON notifications(user_id, is_read) W
 CREATE INDEX idx_notifications_created_at   ON notifications(created_at);
 
 -- ============================================================
--- 18. notices - 공지사항 (→ companies, branches, user_profiles)
+-- 18. notices - 공지사항 (→ companies, branches, users)
 -- ============================================================
 CREATE TABLE notices (
     id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id      uuid        NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
     branch_id       uuid        REFERENCES branches(id) ON DELETE SET NULL,
-    author_id       uuid        REFERENCES user_profiles(id) ON DELETE SET NULL,
+    author_id       uuid        REFERENCES users(id) ON DELETE SET NULL,
     author_name     varchar     NOT NULL,
     author_role     varchar,
     title           varchar     NOT NULL,
@@ -335,27 +335,27 @@ CREATE INDEX idx_notices_created_at   ON notices(created_at);
 CREATE INDEX idx_notices_is_important ON notices(is_important);
 
 -- ============================================================
--- 19. notice_confirmations - 공지 확인 (→ notices, user_profiles)
+-- 19. notice_confirmations - 공지 확인 (→ notices, users)
 -- ============================================================
 CREATE TABLE notice_confirmations (
     id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
     notice_id   uuid        NOT NULL REFERENCES notices(id) ON DELETE CASCADE,
-    user_id     uuid        NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+    user_id     uuid        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at  timestamptz NOT NULL DEFAULT now(),
 
     CONSTRAINT uq_notice_confirmations_notice_user UNIQUE (notice_id, user_id)
 );
 
 -- ============================================================
--- 20. feedbacks - 피드백 (→ companies, assignments, branches, user_profiles)
+-- 20. feedbacks - 피드백 (→ companies, assignments, branches, users)
 -- ============================================================
 CREATE TABLE feedbacks (
     id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id      uuid        NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
     assignment_id   uuid        REFERENCES assignments(id) ON DELETE SET NULL,
     branch_id       uuid        REFERENCES branches(id) ON DELETE SET NULL,
-    author_id       uuid        NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
-    target_user_id  uuid        REFERENCES user_profiles(id) ON DELETE SET NULL,
+    author_id       uuid        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_user_id  uuid        REFERENCES users(id) ON DELETE SET NULL,
     content         text        NOT NULL,
     status          varchar,
     created_at      timestamptz NOT NULL DEFAULT now()
@@ -382,8 +382,8 @@ CREATE TRIGGER trg_companies_updated_at
     BEFORE UPDATE ON companies
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER trg_user_profiles_updated_at
-    BEFORE UPDATE ON user_profiles
+CREATE TRIGGER trg_users_updated_at
+    BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER trg_checklist_templates_updated_at

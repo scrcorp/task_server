@@ -818,7 +818,7 @@ tasks              checklist_items       comments           notices
 ### 신규 테이블 (추가 필요)
 
 ```
-user_profiles          attendance             opinions            notifications
+users          attendance             opinions            notifications
 ├── id (PK)            ├── id (PK)            ├── id (PK)         ├── id (PK)
 ├── user_id (FK)       ├── user_id (FK)       ├── user_id (FK)    ├── user_id (FK)
 ├── full_name          ├── clock_in           ├── content         ├── type

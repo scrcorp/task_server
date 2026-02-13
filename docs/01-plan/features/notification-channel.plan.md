@@ -92,7 +92,7 @@ NotificationDispatcher
 | FR-06 | Trigger notification when comment is created | Must |
 | FR-07 | Trigger notification when feedback is created | Must |
 | FR-08 | Include notification type in `NotificationType` enum: `comment` | Should |
-| FR-09 | Look up recipient email from `user_profiles` via `IAuthRepository` | Must |
+| FR-09 | Look up recipient email from `users` via `IAuthRepository` | Must |
 | FR-10 | Handle email send failures gracefully (log, don't block main flow) | Must |
 
 ### 4.2 Non-Functional Requirements

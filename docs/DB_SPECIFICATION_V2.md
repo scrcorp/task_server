@@ -4,7 +4,7 @@
 
 **작성일**: 2026-02-13
 **데이터베이스**: Supabase (PostgreSQL)
-**테이블 수**: 18개 (v1: 16개 → v2: 18개, 구조 전면 개편)
+**테이블 수**: 20개 (v1: 16개 → v2: 20개, 구조 전면 개편)
 
 ---
 
@@ -33,7 +33,7 @@
 |---|----------|------|
 | 1 | `companies` 테이블 신설 (B2B, 최상위 조직) | 조직 계층 전면 재편 |
 | 2 | `groups` → `group_types` + `groups` 분리 (유형별 최대 3개 카테고리) | 유연한 조직 구조 |
-| 3 | `user_profiles`에서 `branch_id`, `group_id` 제거 → `company_id` 추가 | 사용자 소속 변경 |
+| 3 | `users`에서 `branch_id`, `group_id` 제거 → `company_id` 추가 | 사용자 소속 변경 |
 | 4 | 기본 언어 `ko` → `en` (미국 우선) | 신규 사용자 기본값 |
 | 5 | `tasks` 테이블 → `assignments` + `daily_checklists`로 분리 | 업무 시스템 전면 개편 |
 | 6 | `assigned_to` 단일 → `assignment_assignees` N:M 테이블 | 다중 담당자 지원 |
@@ -45,7 +45,7 @@
 | 12 | `notifications.action_url` 추가 | 딥링크 지원 |
 | 13 | `notices`에 `author_name`, `author_role` 추가 | 탈퇴 회원 대비 |
 | 14 | `feedbacks`에 `assignment_id`, `branch_id`, `author_id` 추가 | 업무 컨텍스트 |
-| 15 | `user_profiles`에 `password_hash`, `email_verified` 추가 | 자체 인증 (Supabase Auth 탈피) |
+| 15 | `users`에 `password_hash`, `email_verified` 추가 | 자체 인증 (Supabase Auth 탈피) |
 | 16 | `email_verification_codes` 테이블 신설 (6자리 OTP) | 이메일 인증 코드 관리 |
 
 ### 1.2 테이블 변경 매핑
@@ -56,7 +56,7 @@
 | `brands` | `brands` | `company_id` FK 추가 |
 | `branches` | `branches` | 유지 |
 | `groups` | `group_types` + `groups` | **분리 재설계** |
-| `user_profiles` | `user_profiles` | `company_id` 추가, `branch_id`/`group_id` 제거 |
+| `users` | `users` | `company_id` 추가, `branch_id`/`group_id` 제거 |
 | `tasks` | - | **삭제** (assignments + daily_checklists로 분리) |
 | `checklist_items` | - | **삭제** (template_items로 통합) |
 | `checklist_logs` | - | **삭제** (파일 로그로 대체) |
@@ -79,11 +79,11 @@
 | 도메인 | 테이블 수 | 테이블 |
 |--------|-----------|--------|
 | 조직 (Organization) | 5 | companies, brands, branches, group_types, groups |
-| 사용자 (User) | 1 | user_profiles |
+| 사용자 (User) | 2 | users, email_verification_codes |
 | 체크리스트 (Checklist) | 4 | checklist_templates, template_items, template_groups, daily_checklists |
 | 할당 업무 (Assignment) | 3 | assignments, assignment_assignees, comments |
-| 운영 (Operations) | 5 | attendance, opinions, notifications, notices, notice_confirmations, feedbacks |
-| **합계** | **18** | |
+| 운영 (Operations) | 6 | attendance, opinions, notifications, notices, notice_confirmations, feedbacks |
+| **합계** | **20** | |
 
 ---
 
@@ -93,7 +93,7 @@
 erDiagram
     %% === 조직 계층 ===
     companies ||--o{ brands : "1:N"
-    companies ||--o{ user_profiles : "1:N"
+    companies ||--o{ users : "1:N"
     brands ||--o{ branches : "1:N"
     branches ||--o{ group_types : "1:N (max 3)"
     group_types ||--o{ groups : "1:N"
@@ -109,18 +109,18 @@ erDiagram
     %% === 할당 업무 ===
     companies ||--o{ assignments : "1:N"
     assignments ||--o{ assignment_assignees : "1:N"
-    user_profiles ||--o{ assignment_assignees : "1:N"
+    users ||--o{ assignment_assignees : "1:N"
     assignments ||--o{ comments : "1:N"
-    user_profiles ||--o{ comments : "작성자"
+    users ||--o{ comments : "작성자"
 
     %% === 운영 ===
-    user_profiles ||--o{ attendance : "1:N"
-    user_profiles ||--o{ opinions : "1:N"
-    user_profiles ||--o{ notifications : "1:N"
-    user_profiles ||--o{ notices : "작성자"
+    users ||--o{ attendance : "1:N"
+    users ||--o{ opinions : "1:N"
+    users ||--o{ notifications : "1:N"
+    users ||--o{ notices : "작성자"
     notices ||--o{ notice_confirmations : "1:N"
-    user_profiles ||--o{ notice_confirmations : "확인자"
-    user_profiles ||--o{ feedbacks : "작성자/대상"
+    users ||--o{ notice_confirmations : "확인자"
+    users ||--o{ feedbacks : "작성자/대상"
     assignments ||--o{ feedbacks : "1:N"
 
     companies {
@@ -161,7 +161,7 @@ erDiagram
         timestamptz created_at
     }
 
-    user_profiles {
+    users {
         uuid id PK
         uuid company_id FK
         varchar email UK
@@ -452,7 +452,7 @@ ABC회사 (company)
 
 ### 3.2 사용자 도메인 (User)
 
-#### 3.2.1 `user_profiles` - 사용자 프로필 (CHANGED)
+#### 3.2.1 `users` - 사용자 프로필 (CHANGED)
 
 > 자체 인증 시스템 (Custom JWT + bcrypt). Supabase Auth 미사용. 사용자는 **회사 소속**이며, 회사 내 어느 지점/그룹에서든 근무 가능
 
@@ -482,10 +482,10 @@ ABC회사 (company)
 - CHECK: `status` IN ('pending', 'active', 'inactive')
 
 **인덱스**:
-- `idx_user_profiles_company_id` ON `company_id`
-- `idx_user_profiles_login_id` ON `login_id`
-- `idx_user_profiles_role` ON `role`
-- `idx_user_profiles_status` ON `status`
+- `idx_users_company_id` ON `company_id`
+- `idx_users_login_id` ON `login_id`
+- `idx_users_role` ON `role`
+- `idx_users_status` ON `status`
 
 **v1 → v2 변경**:
 - `company_id` 추가 (NOT NULL)
@@ -505,7 +505,7 @@ ABC회사 (company)
 | 컬럼명 | 타입 | NULL 허용 | 기본값 | 설명 |
 |---------|------|:---------:|--------|------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | 코드 고유 ID (PK) |
-| `user_id` | `uuid` | NO | - | 사용자 ID (FK → user_profiles.id) |
+| `user_id` | `uuid` | NO | - | 사용자 ID (FK → users.id) |
 | `email` | `varchar(255)` | NO | - | 인증 대상 이메일 |
 | `code` | `varchar(6)` | NO | - | 6자리 숫자 OTP 코드 |
 | `expires_at` | `timestamptz` | NO | - | 만료 시각 |
@@ -514,7 +514,7 @@ ABC회사 (company)
 
 **제약조건**:
 - PK: `id`
-- FK: `user_id` → `user_profiles(id)` ON DELETE CASCADE
+- FK: `user_id` → `users(id)` ON DELETE CASCADE
 
 **인덱스**:
 - `idx_verification_codes_email_active` ON `(email, used, expires_at DESC)`
@@ -698,7 +698,7 @@ ABC회사 (company)
 | `status` | `varchar` | NO | `'todo'` | 진행 상태 (todo/in_progress/done) |
 | `due_date` | `timestamptz` | YES | `NULL` | 마감 기한 |
 | `recurrence` | `jsonb` | YES | `NULL` | 반복 주기 (NULL=일회성) |
-| `created_by` | `uuid` | NO | - | 생성자 ID (FK → user_profiles.id) |
+| `created_by` | `uuid` | NO | - | 생성자 ID (FK → users.id) |
 | `created_at` | `timestamptz` | NO | `now()` | 생성일시 |
 | `updated_at` | `timestamptz` | NO | `now()` | 수정일시 |
 
@@ -706,7 +706,7 @@ ABC회사 (company)
 - PK: `id`
 - FK: `company_id` → `companies(id)` ON DELETE CASCADE
 - FK: `branch_id` → `branches(id)` ON DELETE SET NULL
-- FK: `created_by` → `user_profiles(id)` ON DELETE SET NULL
+- FK: `created_by` → `users(id)` ON DELETE SET NULL
 - CHECK: `priority` IN ('urgent', 'normal', 'low')
 - CHECK: `status` IN ('todo', 'in_progress', 'done')
 
@@ -726,13 +726,13 @@ ABC회사 (company)
 | 컬럼명 | 타입 | NULL 허용 | 기본값 | 설명 |
 |---------|------|:---------:|--------|------|
 | `assignment_id` | `uuid` | NO | - | 업무 ID (FK → assignments.id) |
-| `user_id` | `uuid` | NO | - | 담당자 ID (FK → user_profiles.id) |
+| `user_id` | `uuid` | NO | - | 담당자 ID (FK → users.id) |
 | `assigned_at` | `timestamptz` | NO | `now()` | 할당일시 |
 
 **제약조건**:
 - PK: `(assignment_id, user_id)` (복합 PK)
 - FK: `assignment_id` → `assignments(id)` ON DELETE CASCADE
-- FK: `user_id` → `user_profiles(id)` ON DELETE CASCADE
+- FK: `user_id` → `users(id)` ON DELETE CASCADE
 
 **인덱스**:
 - `idx_assignees_user_id` ON `user_id`
@@ -747,7 +747,7 @@ ABC회사 (company)
 |---------|------|:---------:|--------|------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | 댓글 고유 ID (PK) |
 | `assignment_id` | `uuid` | NO | - | 업무 ID (FK → assignments.id) |
-| `user_id` | `uuid` | NO | - | 작성자 ID (FK → user_profiles.id) |
+| `user_id` | `uuid` | NO | - | 작성자 ID (FK → users.id) |
 | `content` | `text` | YES | `NULL` | 텍스트 내용 |
 | `content_type` | `varchar` | NO | `'text'` | 콘텐츠 유형 (text/image/video/file) |
 | `attachments` | `jsonb` | YES | `NULL` | 첨부파일 목록 |
@@ -758,7 +758,7 @@ ABC회사 (company)
 **제약조건**:
 - PK: `id`
 - FK: `assignment_id` → `assignments(id)` ON DELETE CASCADE
-- FK: `user_id` → `user_profiles(id)` ON DELETE CASCADE
+- FK: `user_id` → `users(id)` ON DELETE CASCADE
 - CHECK: `content_type` IN ('text', 'image', 'video', 'file')
 
 **인덱스**:
@@ -789,7 +789,7 @@ ABC회사 (company)
 |---------|------|:---------:|--------|------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | 기록 고유 ID (PK) |
 | `company_id` | `uuid` | NO | - | 회사 ID (FK → companies.id) |
-| `user_id` | `uuid` | NO | - | 사용자 ID (FK → user_profiles.id) |
+| `user_id` | `uuid` | NO | - | 사용자 ID (FK → users.id) |
 | `branch_id` | `uuid` | YES | `NULL` | 출근 지점 ID (FK → branches.id) |
 | `clock_in` | `timestamptz` | **YES** | `NULL` | 출근 시각 (미출근 시 NULL) |
 | `clock_out` | `timestamptz` | YES | `NULL` | 퇴근 시각 |
@@ -800,7 +800,7 @@ ABC회사 (company)
 **제약조건**:
 - PK: `id`
 - FK: `company_id` → `companies(id)` ON DELETE CASCADE
-- FK: `user_id` → `user_profiles(id)` ON DELETE CASCADE
+- FK: `user_id` → `users(id)` ON DELETE CASCADE
 - FK: `branch_id` → `branches(id)` ON DELETE SET NULL
 - CHECK: `status` IN ('not_started', 'on_duty', 'off_duty', 'completed')
 
@@ -823,7 +823,7 @@ ABC회사 (company)
 |---------|------|:---------:|--------|------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | 건의 고유 ID (PK) |
 | `company_id` | `uuid` | NO | - | 회사 ID (FK → companies.id) |
-| `user_id` | `uuid` | NO | - | 작성자 ID (FK → user_profiles.id) |
+| `user_id` | `uuid` | NO | - | 작성자 ID (FK → users.id) |
 | `content` | `text` | NO | - | 건의 내용 |
 | `status` | `varchar` | NO | `'submitted'` | 처리 상태 |
 | `created_at` | `timestamptz` | NO | `now()` | 생성일시 |
@@ -831,7 +831,7 @@ ABC회사 (company)
 **제약조건**:
 - PK: `id`
 - FK: `company_id` → `companies(id)` ON DELETE CASCADE
-- FK: `user_id` → `user_profiles(id)` ON DELETE CASCADE
+- FK: `user_id` → `users(id)` ON DELETE CASCADE
 - CHECK: `status` IN ('submitted', 'reviewed', 'resolved')
 
 **인덱스**:
@@ -851,7 +851,7 @@ ABC회사 (company)
 |---------|------|:---------:|--------|------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | 알림 고유 ID (PK) |
 | `company_id` | `uuid` | NO | - | 회사 ID (FK → companies.id) |
-| `user_id` | `uuid` | NO | - | 수신자 ID (FK → user_profiles.id) |
+| `user_id` | `uuid` | NO | - | 수신자 ID (FK → users.id) |
 | `type` | `varchar` | NO | - | 알림 유형 |
 | `title` | `varchar` | NO | - | 알림 제목 |
 | `message` | `text` | NO | - | 알림 내용 |
@@ -864,8 +864,8 @@ ABC회사 (company)
 **제약조건**:
 - PK: `id`
 - FK: `company_id` → `companies(id)` ON DELETE CASCADE
-- FK: `user_id` → `user_profiles(id)` ON DELETE CASCADE
-- CHECK: `type` IN ('task_assigned', 'task_updated', 'notice', 'feedback', 'system')
+- FK: `user_id` → `users(id)` ON DELETE CASCADE
+- CHECK: `type` IN ('task_assigned', 'task_updated', 'notice', 'feedback', 'comment', 'system')
 
 **인덱스**:
 - `idx_notifications_company_user` ON `(company_id, user_id)`
@@ -885,7 +885,7 @@ ABC회사 (company)
 | `id` | `uuid` | NO | `gen_random_uuid()` | 공지 고유 ID (PK) |
 | `company_id` | `uuid` | NO | - | 회사 ID (FK → companies.id) |
 | `branch_id` | `uuid` | YES | `NULL` | 지점 ID (NULL=전사 공지) |
-| `author_id` | `uuid` | YES | `NULL` | 작성자 ID (FK → user_profiles.id) |
+| `author_id` | `uuid` | YES | `NULL` | 작성자 ID (FK → users.id) |
 | `author_name` | `varchar` | NO | - | 작성자 이름 (비정규화) |
 | `author_role` | `varchar` | YES | `NULL` | 작성자 직급 (비정규화) |
 | `title` | `varchar` | NO | - | 공지 제목 |
@@ -897,7 +897,7 @@ ABC회사 (company)
 - PK: `id`
 - FK: `company_id` → `companies(id)` ON DELETE CASCADE
 - FK: `branch_id` → `branches(id)` ON DELETE SET NULL
-- FK: `author_id` → `user_profiles(id)` ON DELETE SET NULL
+- FK: `author_id` → `users(id)` ON DELETE SET NULL
 
 **인덱스**:
 - `idx_notices_company_id` ON `company_id`
@@ -917,13 +917,13 @@ ABC회사 (company)
 |---------|------|:---------:|--------|------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | 확인 고유 ID (PK) |
 | `notice_id` | `uuid` | NO | - | 공지 ID (FK → notices.id) |
-| `user_id` | `uuid` | NO | - | 확인자 ID (FK → user_profiles.id) |
+| `user_id` | `uuid` | NO | - | 확인자 ID (FK → users.id) |
 | `created_at` | `timestamptz` | NO | `now()` | 확인일시 |
 
 **제약조건**:
 - PK: `id`
 - FK: `notice_id` → `notices(id)` ON DELETE CASCADE
-- FK: `user_id` → `user_profiles(id)` ON DELETE CASCADE
+- FK: `user_id` → `users(id)` ON DELETE CASCADE
 - UNIQUE: `(notice_id, user_id)`
 
 ---
@@ -938,8 +938,8 @@ ABC회사 (company)
 | `company_id` | `uuid` | NO | - | 회사 ID (FK → companies.id) |
 | `assignment_id` | `uuid` | YES | `NULL` | 관련 업무 ID (FK → assignments.id) |
 | `branch_id` | `uuid` | YES | `NULL` | 관련 지점 ID (FK → branches.id) |
-| `author_id` | `uuid` | NO | - | 피드백 작성자 (FK → user_profiles.id) |
-| `target_user_id` | `uuid` | YES | `NULL` | 피드백 대상자 (FK → user_profiles.id) |
+| `author_id` | `uuid` | NO | - | 피드백 작성자 (FK → users.id) |
+| `target_user_id` | `uuid` | YES | `NULL` | 피드백 대상자 (FK → users.id) |
 | `content` | `text` | NO | - | 피드백 내용 |
 | `status` | `varchar` | YES | `NULL` | 피드백 상태 |
 | `created_at` | `timestamptz` | NO | `now()` | 생성일시 |
@@ -949,8 +949,8 @@ ABC회사 (company)
 - FK: `company_id` → `companies(id)` ON DELETE CASCADE
 - FK: `assignment_id` → `assignments(id)` ON DELETE SET NULL
 - FK: `branch_id` → `branches(id)` ON DELETE SET NULL
-- FK: `author_id` → `user_profiles(id)` ON DELETE CASCADE
-- FK: `target_user_id` → `user_profiles(id)` ON DELETE SET NULL
+- FK: `author_id` → `users(id)` ON DELETE CASCADE
+- FK: `target_user_id` → `users(id)` ON DELETE SET NULL
 
 **인덱스**:
 - `idx_feedbacks_company_id` ON `company_id`
@@ -1011,6 +1011,7 @@ task_assigned - 업무 할당 알림
 task_updated  - 업무 변경 알림
 notice        - 공지사항 알림
 feedback      - 피드백 알림
+comment       - 댓글 알림
 system        - 시스템 알림
 ```
 
@@ -1063,7 +1064,8 @@ companies (회사) ← 최상위 (B2B)
 
 ```
 companies (회사)
-  └── user_profiles (사용자) [1:N]
+  └── users (사용자) [1:N]
+        ├── email_verification_codes (이메일 인증 코드) [1:N]
         ※ 사용자는 회사 소속, 어느 지점/그룹에서든 근무 가능
 ```
 
@@ -1080,7 +1082,7 @@ checklist_templates (템플릿)
 
 ```
 assignments (할당 업무)
-  ├── assignment_assignees (담당자) [N:M via user_profiles]
+  ├── assignment_assignees (담당자) [N:M via users]
   ├── comments (댓글) [1:N]
   └── feedbacks (피드백) [1:N]
 ```
@@ -1093,7 +1095,7 @@ assignments (할당 업무)
 | `branches` | `brand_id` | `brands` | `id` | CASCADE |
 | `group_types` | `branch_id` | `branches` | `id` | CASCADE |
 | `groups` | `group_type_id` | `group_types` | `id` | CASCADE |
-| `user_profiles` | `company_id` | `companies` | `id` | CASCADE |
+| `users` | `company_id` | `companies` | `id` | CASCADE |
 | `checklist_templates` | `company_id` | `companies` | `id` | CASCADE |
 | `checklist_templates` | `brand_id` | `brands` | `id` | SET NULL |
 | `checklist_templates` | `branch_id` | `branches` | `id` | SET NULL |
@@ -1104,28 +1106,28 @@ assignments (할당 업무)
 | `daily_checklists` | `branch_id` | `branches` | `id` | CASCADE |
 | `assignments` | `company_id` | `companies` | `id` | CASCADE |
 | `assignments` | `branch_id` | `branches` | `id` | SET NULL |
-| `assignments` | `created_by` | `user_profiles` | `id` | SET NULL |
+| `assignments` | `created_by` | `users` | `id` | SET NULL |
 | `assignment_assignees` | `assignment_id` | `assignments` | `id` | CASCADE |
-| `assignment_assignees` | `user_id` | `user_profiles` | `id` | CASCADE |
+| `assignment_assignees` | `user_id` | `users` | `id` | CASCADE |
 | `comments` | `assignment_id` | `assignments` | `id` | CASCADE |
-| `comments` | `user_id` | `user_profiles` | `id` | CASCADE |
+| `comments` | `user_id` | `users` | `id` | CASCADE |
 | `attendance` | `company_id` | `companies` | `id` | CASCADE |
-| `attendance` | `user_id` | `user_profiles` | `id` | CASCADE |
+| `attendance` | `user_id` | `users` | `id` | CASCADE |
 | `attendance` | `branch_id` | `branches` | `id` | SET NULL |
 | `opinions` | `company_id` | `companies` | `id` | CASCADE |
-| `opinions` | `user_id` | `user_profiles` | `id` | CASCADE |
+| `opinions` | `user_id` | `users` | `id` | CASCADE |
 | `notifications` | `company_id` | `companies` | `id` | CASCADE |
-| `notifications` | `user_id` | `user_profiles` | `id` | CASCADE |
+| `notifications` | `user_id` | `users` | `id` | CASCADE |
 | `notices` | `company_id` | `companies` | `id` | CASCADE |
 | `notices` | `branch_id` | `branches` | `id` | SET NULL |
-| `notices` | `author_id` | `user_profiles` | `id` | SET NULL |
+| `notices` | `author_id` | `users` | `id` | SET NULL |
 | `notice_confirmations` | `notice_id` | `notices` | `id` | CASCADE |
-| `notice_confirmations` | `user_id` | `user_profiles` | `id` | CASCADE |
+| `notice_confirmations` | `user_id` | `users` | `id` | CASCADE |
 | `feedbacks` | `company_id` | `companies` | `id` | CASCADE |
 | `feedbacks` | `assignment_id` | `assignments` | `id` | SET NULL |
 | `feedbacks` | `branch_id` | `branches` | `id` | SET NULL |
-| `feedbacks` | `author_id` | `user_profiles` | `id` | CASCADE |
-| `feedbacks` | `target_user_id` | `user_profiles` | `id` | SET NULL |
+| `feedbacks` | `author_id` | `users` | `id` | CASCADE |
+| `feedbacks` | `target_user_id` | `users` | `id` | SET NULL |
 
 ---
 
@@ -1140,7 +1142,7 @@ assignments (할당 업무)
 | 로그인 방식 | 이메일 로그인 | **login_id 로그인** | 이메일은 SMTP 인증/알림용 |
 | 토큰 발급 | Supabase JWT | Custom JWT (HS256) | access_token (60min) + refresh_token (7d) |
 | 이메일 인증 | Supabase 내장 | **Google SMTP** | 가입 시 비동기 발송, 별도 verify 엔드포인트 |
-| 비밀번호 저장 | Supabase Auth | **bcrypt hash → user_profiles.password_hash** | DB 직접 관리 |
+| 비밀번호 저장 | Supabase Auth | **bcrypt hash → users.password_hash** | DB 직접 관리 |
 
 ### 6.2 업무 API 변경
 
@@ -1196,11 +1198,11 @@ Phase 1: 조직 구조
   4. groups 재구성 (branch_id → group_type_id)
 
 Phase 2: 사용자 + 자체 인증
-  5. user_profiles에 company_id 추가
-  6. user_profiles에 password_hash (text NOT NULL) 추가
-  7. user_profiles에 email_verified (boolean DEFAULT false) 추가
-  8. user_profiles에서 branch_id, group_id 제거
-  9. user_profiles에서 auth.users FK 제거 (Supabase Auth 미사용)
+  5. users에 company_id 추가
+  6. users에 password_hash (text NOT NULL) 추가
+  7. users에 email_verified (boolean DEFAULT false) 추가
+  8. users에서 branch_id, group_id 제거
+  9. users에서 auth.users FK 제거 (Supabase Auth 미사용)
   10. language 기본값 변경
   11. 기존 사용자 password_hash 백필 (Supabase Auth → bcrypt 변환 필요)
 

@@ -33,7 +33,7 @@ Task Server는 프랜차이즈/매장 운영을 위한 업무 관리 시스템�
 | 도메인 | 테이블 수 | 설명 |
 |--------|-----------|------|
 | 조직 (Organization) | 3 | brands, branches, groups |
-| 사용자 (User) | 1 | user_profiles |
+| 사용자 (User) | 1 | users |
 | 업무 (Task) | 2 | tasks, comments |
 | 체크리스트 (Checklist) | 4 | checklist_items, checklist_logs, checklist_templates, checklist_template_items |
 | 운영 (Operations) | 6 | attendance, opinions, notifications, notices, notice_confirmations, feedbacks |
@@ -46,17 +46,17 @@ Task Server는 프랜차이즈/매장 운영을 위한 업무 관리 시스템�
 erDiagram
     brands ||--o{ branches : "1:N"
     branches ||--o{ groups : "1:N"
-    branches ||--o{ user_profiles : "1:N"
-    groups ||--o{ user_profiles : "1:N"
+    branches ||--o{ users : "1:N"
+    groups ||--o{ users : "1:N"
 
-    user_profiles ||--o{ tasks : "담당자"
-    user_profiles ||--o{ comments : "작성자"
-    user_profiles ||--o{ attendance : "1:N"
-    user_profiles ||--o{ opinions : "1:N"
-    user_profiles ||--o{ notifications : "1:N"
-    user_profiles ||--o{ notices : "작성자"
-    user_profiles ||--o{ notice_confirmations : "확인자"
-    user_profiles ||--o{ feedbacks : "1:N"
+    users ||--o{ tasks : "담당자"
+    users ||--o{ comments : "작성자"
+    users ||--o{ attendance : "1:N"
+    users ||--o{ opinions : "1:N"
+    users ||--o{ notifications : "1:N"
+    users ||--o{ notices : "작성자"
+    users ||--o{ notice_confirmations : "확인자"
+    users ||--o{ feedbacks : "1:N"
 
     tasks ||--o{ checklist_items : "1:N"
     tasks ||--o{ comments : "1:N"
@@ -89,7 +89,7 @@ erDiagram
         timestamptz created_at
     }
 
-    user_profiles {
+    users {
         uuid id PK
         varchar email
         varchar login_id
@@ -279,7 +279,7 @@ erDiagram
 
 ### 3.2 사용자 도메인 (User)
 
-#### 3.2.1 `user_profiles` - 사용자 프로필
+#### 3.2.1 `users` - 사용자 프로필
 
 > Supabase `auth.users`와 연동되는 사용자 프로필 정보
 
@@ -310,10 +310,10 @@ erDiagram
 - CHECK: `status` IN ('pending', 'active', 'inactive')
 
 **인덱스**:
-- `idx_user_profiles_branch_id` ON `branch_id`
-- `idx_user_profiles_group_id` ON `group_id`
-- `idx_user_profiles_role` ON `role`
-- `idx_user_profiles_status` ON `status`
+- `idx_users_branch_id` ON `branch_id`
+- `idx_users_group_id` ON `group_id`
+- `idx_users_role` ON `role`
+- `idx_users_status` ON `status`
 
 **Enum 값**:
 
@@ -343,12 +343,12 @@ erDiagram
 | `priority` | `varchar` | NO | `'normal'` | 우선순위 (urgent/normal/low) |
 | `status` | `varchar` | NO | `'todo'` | 진행 상태 (todo/in_progress/done) |
 | `due_date` | `timestamptz` | YES | `NULL` | 마감 기한 |
-| `assigned_to` | `uuid` | YES | `NULL` | 담당자 ID (FK → user_profiles.id) |
+| `assigned_to` | `uuid` | YES | `NULL` | 담당자 ID (FK → users.id) |
 | `created_at` | `timestamptz` | NO | `now()` | 생성일시 |
 
 **제약조건**:
 - PK: `id`
-- FK: `assigned_to` → `user_profiles(id)` ON DELETE SET NULL
+- FK: `assigned_to` → `users(id)` ON DELETE SET NULL
 - CHECK: `type` IN ('daily', 'assigned')
 - CHECK: `priority` IN ('urgent', 'normal', 'low')
 - CHECK: `status` IN ('todo', 'in_progress', 'done')
@@ -382,7 +382,7 @@ erDiagram
 |---------|------|:---------:|--------|------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | 댓글 고유 ID (PK) |
 | `task_id` | `uuid` | NO | - | 업무 ID (FK → tasks.id) |
-| `user_id` | `uuid` | NO | - | 작성자 ID (FK → user_profiles.id) |
+| `user_id` | `uuid` | NO | - | 작성자 ID (FK → users.id) |
 | `content` | `text` | NO | - | 댓글 내용 |
 | `user_name` | `varchar` | YES | `NULL` | 작성자 이름 (비정규화) |
 | `is_manager` | `boolean` | NO | `false` | 관리자 여부 |
@@ -391,7 +391,7 @@ erDiagram
 **제약조건**:
 - PK: `id`
 - FK: `task_id` → `tasks(id)` ON DELETE CASCADE
-- FK: `user_id` → `user_profiles(id)` ON DELETE CASCADE
+- FK: `user_id` → `users(id)` ON DELETE CASCADE
 
 **인덱스**:
 - `idx_comments_task_id` ON `task_id`
@@ -497,7 +497,7 @@ erDiagram
 | 컬럼명 | 타입 | NULL 허용 | 기본값 | 설명 |
 |---------|------|:---------:|--------|------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | 기록 고유 ID (PK) |
-| `user_id` | `uuid` | NO | - | 사용자 ID (FK → user_profiles.id) |
+| `user_id` | `uuid` | NO | - | 사용자 ID (FK → users.id) |
 | `clock_in` | `timestamptz` | NO | - | 출근 시각 |
 | `clock_out` | `timestamptz` | YES | `NULL` | 퇴근 시각 |
 | `location` | `varchar` | YES | `NULL` | 출근 위치 정보 |
@@ -506,7 +506,7 @@ erDiagram
 
 **제약조건**:
 - PK: `id`
-- FK: `user_id` → `user_profiles(id)` ON DELETE CASCADE
+- FK: `user_id` → `users(id)` ON DELETE CASCADE
 - CHECK: `status` IN ('not_started', 'on_duty', 'off_duty', 'completed')
 
 **인덱스**:
@@ -532,14 +532,14 @@ erDiagram
 | 컬럼명 | 타입 | NULL 허용 | 기본값 | 설명 |
 |---------|------|:---------:|--------|------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | 건의 고유 ID (PK) |
-| `user_id` | `uuid` | NO | - | 작성자 ID (FK → user_profiles.id) |
+| `user_id` | `uuid` | NO | - | 작성자 ID (FK → users.id) |
 | `content` | `text` | NO | - | 건의 내용 |
 | `status` | `varchar` | NO | `'submitted'` | 처리 상태 |
 | `created_at` | `timestamptz` | NO | `now()` | 생성일시 |
 
 **제약조건**:
 - PK: `id`
-- FK: `user_id` → `user_profiles(id)` ON DELETE CASCADE
+- FK: `user_id` → `users(id)` ON DELETE CASCADE
 - CHECK: `status` IN ('submitted', 'reviewed', 'resolved')
 
 **인덱스**:
@@ -564,7 +564,7 @@ erDiagram
 | 컬럼명 | 타입 | NULL 허용 | 기본값 | 설명 |
 |---------|------|:---------:|--------|------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | 알림 고유 ID (PK) |
-| `user_id` | `uuid` | NO | - | 수신자 ID (FK → user_profiles.id) |
+| `user_id` | `uuid` | NO | - | 수신자 ID (FK → users.id) |
 | `type` | `varchar` | NO | - | 알림 유형 |
 | `title` | `varchar` | NO | - | 알림 제목 |
 | `message` | `text` | NO | - | 알림 내용 |
@@ -575,7 +575,7 @@ erDiagram
 
 **제약조건**:
 - PK: `id`
-- FK: `user_id` → `user_profiles(id)` ON DELETE CASCADE
+- FK: `user_id` → `users(id)` ON DELETE CASCADE
 - CHECK: `type` IN ('task_assigned', 'task_updated', 'notice', 'feedback', 'system')
 
 **인덱스**:
@@ -602,7 +602,7 @@ erDiagram
 | 컬럼명 | 타입 | NULL 허용 | 기본값 | 설명 |
 |---------|------|:---------:|--------|------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | 공지 고유 ID (PK) |
-| `author_id` | `uuid` | YES | `NULL` | 작성자 ID (FK → user_profiles.id) |
+| `author_id` | `uuid` | YES | `NULL` | 작성자 ID (FK → users.id) |
 | `title` | `varchar` | NO | - | 공지 제목 |
 | `content` | `text` | NO | - | 공지 본문 |
 | `is_important` | `boolean` | NO | `false` | 중요 공지 여부 |
@@ -610,7 +610,7 @@ erDiagram
 
 **제약조건**:
 - PK: `id`
-- FK: `author_id` → `user_profiles(id)` ON DELETE SET NULL
+- FK: `author_id` → `users(id)` ON DELETE SET NULL
 
 **인덱스**:
 - `idx_notices_created_at` ON `created_at`
@@ -626,13 +626,13 @@ erDiagram
 |---------|------|:---------:|--------|------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | 확인 고유 ID (PK) |
 | `notice_id` | `uuid` | NO | - | 공지 ID (FK → notices.id) |
-| `user_id` | `uuid` | NO | - | 확인자 ID (FK → user_profiles.id) |
+| `user_id` | `uuid` | NO | - | 확인자 ID (FK → users.id) |
 | `created_at` | `timestamptz` | NO | `now()` | 확인일시 |
 
 **제약조건**:
 - PK: `id`
 - FK: `notice_id` → `notices(id)` ON DELETE CASCADE
-- FK: `user_id` → `user_profiles(id)` ON DELETE CASCADE
+- FK: `user_id` → `users(id)` ON DELETE CASCADE
 - UNIQUE: `(notice_id, user_id)` -- 중복 확인 방지
 
 **인덱스**:
@@ -648,14 +648,14 @@ erDiagram
 | 컬럼명 | 타입 | NULL 허용 | 기본값 | 설명 |
 |---------|------|:---------:|--------|------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | 피드백 고유 ID (PK) |
-| `user_id` | `uuid` | YES | `NULL` | 대상 사용자 ID (FK → user_profiles.id) |
+| `user_id` | `uuid` | YES | `NULL` | 대상 사용자 ID (FK → users.id) |
 | `content` | `text` | NO | - | 피드백 내용 |
 | `status` | `varchar` | YES | `NULL` | 피드백 상태 |
 | `created_at` | `timestamptz` | NO | `now()` | 생성일시 |
 
 **제약조건**:
 - PK: `id`
-- FK: `user_id` → `user_profiles(id)` ON DELETE SET NULL
+- FK: `user_id` → `users(id)` ON DELETE SET NULL
 
 **인덱스**:
 - `idx_feedbacks_user_id` ON `user_id`
@@ -732,7 +732,7 @@ resolved  - 해결됨
 brands (브랜드)
   └── branches (지점) [1:N]
         ├── groups (그룹) [1:N]
-        └── user_profiles (사용자) [1:N]
+        └── users (사용자) [1:N]
               └── groups (그룹) [N:1, optional]
 ```
 
@@ -743,7 +743,7 @@ tasks (업무)
   ├── checklist_items (체크리스트) [1:N]
   │     └── checklist_logs (검증 이력) [1:N]
   ├── comments (댓글) [1:N]
-  └── user_profiles (담당자) [N:1]
+  └── users (담당자) [N:1]
 ```
 
 ### 5.3 체크리스트 템플릿
@@ -758,7 +758,7 @@ checklist_templates (템플릿)
 ### 5.4 운영 관련
 
 ```
-user_profiles (사용자)
+users (사용자)
   ├── attendance (출퇴근) [1:N]
   ├── opinions (건의사항) [1:N]
   ├── notifications (알림) [1:N]
@@ -773,21 +773,21 @@ user_profiles (사용자)
 |-------------|-----------|-------------|-----------|-----------|
 | `branches` | `brand_id` | `brands` | `id` | CASCADE |
 | `groups` | `branch_id` | `branches` | `id` | CASCADE |
-| `user_profiles` | `id` | `auth.users` | `id` | CASCADE |
-| `user_profiles` | `branch_id` | `branches` | `id` | SET NULL |
-| `user_profiles` | `group_id` | `groups` | `id` | SET NULL |
-| `tasks` | `assigned_to` | `user_profiles` | `id` | SET NULL |
+| `users` | `id` | `auth.users` | `id` | CASCADE |
+| `users` | `branch_id` | `branches` | `id` | SET NULL |
+| `users` | `group_id` | `groups` | `id` | SET NULL |
+| `tasks` | `assigned_to` | `users` | `id` | SET NULL |
 | `checklist_items` | `task_id` | `tasks` | `id` | CASCADE |
 | `checklist_logs` | `checklist_item_id` | `checklist_items` | `id` | CASCADE |
 | `checklist_templates` | `brand_id` | `brands` | `id` | SET NULL |
 | `checklist_templates` | `group_id` | `groups` | `id` | SET NULL |
 | `checklist_template_items` | `template_id` | `checklist_templates` | `id` | CASCADE |
 | `comments` | `task_id` | `tasks` | `id` | CASCADE |
-| `comments` | `user_id` | `user_profiles` | `id` | CASCADE |
-| `attendance` | `user_id` | `user_profiles` | `id` | CASCADE |
-| `opinions` | `user_id` | `user_profiles` | `id` | CASCADE |
-| `notifications` | `user_id` | `user_profiles` | `id` | CASCADE |
-| `notices` | `author_id` | `user_profiles` | `id` | SET NULL |
+| `comments` | `user_id` | `users` | `id` | CASCADE |
+| `attendance` | `user_id` | `users` | `id` | CASCADE |
+| `opinions` | `user_id` | `users` | `id` | CASCADE |
+| `notifications` | `user_id` | `users` | `id` | CASCADE |
+| `notices` | `author_id` | `users` | `id` | SET NULL |
 | `notice_confirmations` | `notice_id` | `notices` | `id` | CASCADE |
-| `notice_confirmations` | `user_id` | `user_profiles` | `id` | CASCADE |
-| `feedbacks` | `user_id` | `user_profiles` | `id` | SET NULL |
+| `notice_confirmations` | `user_id` | `users` | `id` | CASCADE |
+| `feedbacks` | `user_id` | `users` | `id` | SET NULL |

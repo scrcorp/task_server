@@ -59,7 +59,7 @@
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | `UUID` | PK, DEFAULT gen_random_uuid() | Primary key |
-| `user_id` | `UUID` | NOT NULL, FK → user_profiles(id) ON DELETE CASCADE | Owner |
+| `user_id` | `UUID` | NOT NULL, FK → users(id) ON DELETE CASCADE | Owner |
 | `email` | `VARCHAR(255)` | NOT NULL | Target email |
 | `code` | `VARCHAR(6)` | NOT NULL | 6-digit numeric code |
 | `expires_at` | `TIMESTAMPTZ` | NOT NULL | Expiration timestamp |
@@ -79,7 +79,7 @@ ON email_verification_codes(email, used, expires_at DESC);
 -- email_verification_codes table
 CREATE TABLE email_verification_codes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     email VARCHAR(255) NOT NULL,
     code VARCHAR(6) NOT NULL,
     expires_at TIMESTAMPTZ NOT NULL,

@@ -592,7 +592,7 @@ brands                 branches               groups
                        ├── address            └── created_at
                        └── created_at
 
-user_profiles                     checklist_templates
+users                     checklist_templates
 ├── id (PK)                       ├── id (PK)
 ├── user_id (FK → auth.users)     ├── title
 ├── full_name                     ├── description

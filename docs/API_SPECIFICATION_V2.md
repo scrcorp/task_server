@@ -20,9 +20,11 @@
 9. [Opinions](#9-opinions)
 10. [Notifications](#10-notifications)
 11. [Files](#11-files)
-12. [Schema Definitions](#12-schema-definitions)
-13. [Enum Definitions](#13-enum-definitions)
-14. [Error Responses](#14-error-responses)
+12. [Setup](#12-setup)
+13. [Health Check](#13-health-check)
+14. [Schema Definitions](#14-schema-definitions)
+15. [Enum Definitions](#15-enum-definitions)
+16. [Error Responses](#16-error-responses)
 
 ---
 
@@ -1028,7 +1030,75 @@ Auto-injected: `company_id`, `author_id` from current user.
 
 ---
 
-## 12. Schema Definitions
+## 12. Setup
+
+> System initialization endpoint. No authentication required (intended for first-time setup).
+
+### POST `/setup/init` — Initialize System
+
+| Item | Value |
+|------|-------|
+| Auth | Not required |
+
+Creates the initial company and admin account. Idempotent for company creation; returns `409` if the admin user already exists.
+
+**Request Body** (all fields have defaults)
+```json
+{
+  "company_code": "SCR",
+  "company_name": "SCR",
+  "admin_login_id": "admin",
+  "admin_password": "admin1234",
+  "admin_email": "admin@scr.com",
+  "admin_name": "Admin"
+}
+```
+
+**Response** `200 OK`
+```json
+{
+  "message": "System initialized successfully.",
+  "company": {
+    "id": "uuid",
+    "code": "SCR"
+  },
+  "admin": {
+    "id": "uuid",
+    "login_id": "admin"
+  }
+}
+```
+
+**Error** `409`
+```json
+{ "detail": "User 'admin' already exists." }
+```
+
+---
+
+## 13. Health Check
+
+> Root-level endpoints for health monitoring. No authentication required.
+
+### GET `/` — Root
+
+**Response** `200 OK`
+```json
+{ "message": "Welcome to Task Server API" }
+```
+
+---
+
+### GET `/health` — Health Check
+
+**Response** `200 OK`
+```json
+{ "status": "healthy" }
+```
+
+---
+
+## 14. Schema Definitions
 
 ### User
 
@@ -1173,7 +1243,7 @@ Auto-injected: `company_id`, `author_id` from current user.
 
 ---
 
-## 13. Enum Definitions
+## 15. Enum Definitions
 
 ### UserRole
 | Value | Description |
@@ -1218,6 +1288,7 @@ Auto-injected: `company_id`, `author_id` from current user.
 | `task_updated` | Assignment update |
 | `notice` | Notice notification |
 | `feedback` | Feedback notification |
+| `comment` | Comment notification |
 | `system` | System notification |
 
 ### OpinionStatus
@@ -1244,7 +1315,7 @@ Auto-injected: `company_id`, `author_id` from current user.
 
 ---
 
-## 14. Error Responses
+## 16. Error Responses
 
 ### Common Error Format
 
@@ -1307,4 +1378,4 @@ Unhandled exceptions return:
 | Multi-tenancy | None | `company_id` scoping on all endpoints |
 | API language | Korean | English |
 | Token type | Supabase JWT | Custom HS256 JWT |
-| Password storage | Supabase Auth | bcrypt in `user_profiles.password_hash` |
+| Password storage | Supabase Auth | bcrypt in `users.password_hash` |

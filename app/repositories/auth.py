@@ -64,11 +64,11 @@ class IAuthRepository(ABC):
 
 
 class CustomAuthRepository(IAuthRepository):
-    """Auth repository backed by user_profiles table + bcrypt + custom JWT."""
+    """Auth repository backed by users table + bcrypt + custom JWT."""
 
     def __init__(self, client):
         self.client = client
-        self.table = "user_profiles"
+        self.table = "users"
         self.codes_table = "email_verification_codes"
 
     async def sign_up(self, data: dict) -> dict:

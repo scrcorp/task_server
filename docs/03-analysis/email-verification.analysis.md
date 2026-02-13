@@ -249,7 +249,7 @@ Verify that the "email-verification" feature implementation matches the design d
 |-------------|:------:|-------|
 | `email_verification_codes` table documented | ✅ Match | Section 3.2.2, lines 501-527 |
 | All 7 columns (id, user_id, email, code, expires_at, used, created_at) | ✅ Match | Lines 505-513 |
-| FK: user_id -> user_profiles(id) ON DELETE CASCADE | ✅ Match | Lines 516-517 |
+| FK: user_id -> users(id) ON DELETE CASCADE | ✅ Match | Lines 516-517 |
 | Index: `idx_verification_codes_email_active` | ✅ Match | Line 520 |
 | Rate limiting note (5/hour) | ✅ Match | Line 524 |
 | Default expire: 10 minutes | ✅ Match | Line 525 |

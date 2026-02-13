@@ -50,7 +50,7 @@ def _do_init(req: InitRequest):
 
     # 2. Check if admin user already exists
     existing_user = (
-        supabase.table("user_profiles")
+        supabase.table("users")
         .select("id, login_id")
         .eq("login_id", req.admin_login_id)
         .limit(1)
@@ -74,7 +74,7 @@ def _do_init(req: InitRequest):
         "language": "en",
         "email_verified": True,
     }
-    user_res = supabase.table("user_profiles").insert(user_data).execute()
+    user_res = supabase.table("users").insert(user_data).execute()
 
     return {
         "message": "System initialized successfully.",

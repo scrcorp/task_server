@@ -89,7 +89,7 @@ Additionally, extract inline HTML email templates into separate template files a
 ```sql
 CREATE TABLE email_verification_codes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     email VARCHAR(255) NOT NULL,
     code VARCHAR(6) NOT NULL,
     expires_at TIMESTAMPTZ NOT NULL,

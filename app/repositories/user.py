@@ -6,7 +6,7 @@ from app.core.supabase import supabase
 
 class SupabaseUserRepository(IRepository[User]):
     def __init__(self):
-        self.table = "user_profiles"
+        self.table = "users"
 
     async def get_by_id(self, id: str) -> Optional[User]:
         res = supabase.table(self.table).select("*").eq("id", id).maybe_single().execute()
