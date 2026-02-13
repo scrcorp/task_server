@@ -12,5 +12,4 @@ async def get_dashboard_summary(
     current_user: User = Depends(get_current_user),
     service: DashboardService = Depends(get_dashboard_service),
 ):
-    """현재 사용자의 대시보드 요약 정보를 반환합니다."""
-    return await service.get_summary(current_user.id)
+    return await service.get_summary(current_user.id, current_user.company_id)

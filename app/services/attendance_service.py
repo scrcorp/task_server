@@ -8,53 +8,67 @@ class AttendanceService:
     def __init__(self, attendance_repo: IAttendanceRepository):
         self.attendance_repo = attendance_repo
 
-    async def get_today_status(self, user_id: str) -> Optional[AttendanceRecord]:
+    async def get_today_status(self, user_id: str, company_id: str) -> Optional[AttendanceRecord]:
         today = date.today().isoformat()
-        record = await self.attendance_repo.get_today_record(user_id, today)
+        record = await self.attendance_repo.get_today_record(user_id, company_id, today)
         if record:
             return AttendanceRecord(**record)
         return None
 
-    async def clock_in(self, user_id: str, location: Optional[str] = None) -> AttendanceRecord:
+    async def clock_in(
+        self,
+        user_id: str,
+        company_id: str,
+        branch_id: Optional[str] = None,
+        location: Optional[str] = None,
+    ) -> AttendanceRecord:
         today = date.today().isoformat()
-        existing = await self.attendance_repo.get_today_record(user_id, today)
+        existing = await self.attendance_repo.get_today_record(user_id, company_id, today)
         if existing:
-            raise ValueError("이미 출근 기록이 있습니다.")
+            raise ValueError("Clock-in record already exists for today.")
 
         data = {
             "user_id": user_id,
+            "company_id": company_id,
             "clock_in": datetime.utcnow().isoformat(),
             "status": "on_duty",
         }
+        if branch_id:
+            data["branch_id"] = branch_id
         if location:
             data["location"] = location
 
         record = await self.attendance_repo.clock_in(data)
         return AttendanceRecord(**record)
 
-    async def clock_out(self, user_id: str) -> AttendanceRecord:
+    async def clock_out(self, user_id: str, company_id: str) -> AttendanceRecord:
         today = date.today().isoformat()
-        existing = await self.attendance_repo.get_today_record(user_id, today)
+        existing = await self.attendance_repo.get_today_record(user_id, company_id, today)
         if not existing:
-            raise ValueError("출근 기록이 없습니다.")
+            raise ValueError("No clock-in record found for today.")
         if existing.get("clock_out"):
-            raise ValueError("이미 퇴근 기록이 있습니다.")
+            raise ValueError("Already clocked out for today.")
 
         clock_out_time = datetime.utcnow()
-        clock_in_time = datetime.fromisoformat(existing["clock_in"].replace("Z", "+00:00").replace("+00:00", ""))
-        work_hours = round((clock_out_time - clock_in_time).total_seconds() / 3600, 2)
+        work_hours = None
+        if existing.get("clock_in"):
+            clock_in_time = datetime.fromisoformat(
+                existing["clock_in"].replace("Z", "+00:00").replace("+00:00", "")
+            )
+            work_hours = round((clock_out_time - clock_in_time).total_seconds() / 3600, 2)
 
         data = {
             "clock_out": clock_out_time.isoformat(),
             "status": "completed",
         }
-        record = await self.attendance_repo.clock_out(existing["id"], data)
-        result = AttendanceRecord(**record)
-        result.work_hours = work_hours
-        return result
+        if work_hours is not None:
+            data["work_hours"] = work_hours
 
-    async def get_monthly_history(self, user_id: str, year: int, month: int) -> AttendanceHistoryResponse:
-        records = await self.attendance_repo.get_history(user_id, year, month)
+        record = await self.attendance_repo.clock_out(existing["id"], data)
+        return AttendanceRecord(**record)
+
+    async def get_monthly_history(self, user_id: str, company_id: str, year: int, month: int) -> AttendanceHistoryResponse:
+        records = await self.attendance_repo.get_history(user_id, company_id, year, month)
 
         total_days = len(records)
         completed = sum(1 for r in records if r.get("status") == "completed")

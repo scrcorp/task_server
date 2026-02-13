@@ -15,7 +15,7 @@ async def get_today_status(
     current_user: User = Depends(get_current_user),
     service: AttendanceService = Depends(get_attendance_service),
 ):
-    return await service.get_today_status(current_user.id)
+    return await service.get_today_status(current_user.id, current_user.company_id)
 
 
 @router.post("/clock-in", response_model=AttendanceRecord, status_code=201)
@@ -25,7 +25,12 @@ async def clock_in(
     service: AttendanceService = Depends(get_attendance_service),
 ):
     try:
-        return await service.clock_in(current_user.id, body.location)
+        return await service.clock_in(
+            user_id=current_user.id,
+            company_id=current_user.company_id,
+            branch_id=body.branch_id,
+            location=body.location,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -36,7 +41,7 @@ async def clock_out(
     service: AttendanceService = Depends(get_attendance_service),
 ):
     try:
-        return await service.clock_out(current_user.id)
+        return await service.clock_out(current_user.id, current_user.company_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -51,4 +56,4 @@ async def get_history(
     today = date.today()
     y = year or today.year
     m = month or today.month
-    return await service.get_monthly_history(current_user.id, y, m)
+    return await service.get_monthly_history(current_user.id, current_user.company_id, y, m)

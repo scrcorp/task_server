@@ -14,19 +14,21 @@ router = APIRouter()
 @router.get("/", response_model=List[Notice])
 async def read_notices(
     limit: Optional[int] = None,
+    current_user: User = Depends(get_current_user),
     service: NoticeService = Depends(get_notice_service),
 ):
-    return await service.list_notices(limit=limit)
+    return await service.list_notices(current_user.company_id, limit=limit)
 
 
 @router.get("/{notice_id}")
 async def read_notice(
     notice_id: str,
+    current_user: User = Depends(get_current_user),
     service: NoticeService = Depends(get_notice_service),
 ):
     notice = await service.get_notice(notice_id)
     if not notice:
-        raise HTTPException(status_code=404, detail="공지사항을 찾을 수 없습니다.")
+        raise HTTPException(status_code=404, detail="Notice not found.")
     return notice
 
 
@@ -47,7 +49,13 @@ async def create_notice(
     current_user: User = Depends(require_role([UserRole.ADMIN, UserRole.MANAGER])),
     service: NoticeService = Depends(get_notice_service),
 ):
-    return await service.create_notice(body, current_user.id)
+    return await service.create_notice(
+        body=body,
+        author_id=current_user.id,
+        author_name=current_user.full_name,
+        author_role=current_user.role.value,
+        company_id=current_user.company_id,
+    )
 
 
 @router.patch("/{notice_id}")
@@ -68,4 +76,4 @@ async def delete_notice(
     service: NoticeService = Depends(get_notice_service),
 ):
     await service.delete_notice(notice_id)
-    return {"message": "공지사항이 삭제되었습니다."}
+    return {"message": "Notice deleted."}

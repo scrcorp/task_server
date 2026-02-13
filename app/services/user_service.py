@@ -1,7 +1,8 @@
 from typing import Optional
 from app.repositories.user import SupabaseUserRepository
 from app.repositories.auth import IAuthRepository
-from app.schemas.user import User, UserUpdate
+from app.core.password import hash_password, verify_password
+from app.schemas.user import User
 
 
 class UserService:
@@ -15,9 +16,12 @@ class UserService:
     async def update_profile(self, user_id: str, data: dict) -> User:
         return await self.user_repo.update(user_id, data)
 
-    async def change_password(self, token: str, current_password: str, new_password: str, user_email: str) -> dict:
-        # Verify current password by attempting sign-in
-        await self.auth_repo.sign_in(user_email, current_password)
-        # Update to new password
-        await self.auth_repo.update_user_password(token, new_password)
-        return {"message": "비밀번호가 변경되었습니다."}
+    async def change_password(self, user_id: str, current_password: str, new_password: str) -> dict:
+        user_data = await self.auth_repo.get_user_by_id(user_id)
+        if not user_data or not user_data.get("password_hash"):
+            raise Exception("User not found.")
+        if not verify_password(current_password, user_data["password_hash"]):
+            raise Exception("Current password is incorrect.")
+        new_hash = hash_password(new_password)
+        await self.auth_repo.update_password(user_id, new_hash)
+        return {"message": "Password changed successfully."}

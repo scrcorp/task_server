@@ -1,8 +1,28 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 
+
+# ── Company ─────────────────────────────────────────
+
+class CompanyBase(BaseModel):
+    code: str
+    name: str
+
+class CompanyCreate(CompanyBase):
+    pass
+
+class Company(CompanyBase):
+    id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config: from_attributes = True
+
+
+# ── Brand ───────────────────────────────────────────
+
 class BrandBase(BaseModel):
+    company_id: str
     name: str
 
 class BrandCreate(BrandBase):
@@ -12,6 +32,9 @@ class Brand(BrandBase):
     id: str
     created_at: datetime
     class Config: from_attributes = True
+
+
+# ── Branch ──────────────────────────────────────────
 
 class BranchBase(BaseModel):
     brand_id: str
@@ -26,8 +49,27 @@ class Branch(BranchBase):
     created_at: datetime
     class Config: from_attributes = True
 
-class GroupBase(BaseModel):
+
+# ── GroupType ───────────────────────────────────────
+
+class GroupTypeBase(BaseModel):
     branch_id: str
+    priority: int
+    label: str
+
+class GroupTypeCreate(GroupTypeBase):
+    pass
+
+class GroupType(GroupTypeBase):
+    id: str
+    created_at: datetime
+    class Config: from_attributes = True
+
+
+# ── Group ───────────────────────────────────────────
+
+class GroupBase(BaseModel):
+    group_type_id: str
     name: str
 
 class GroupCreate(GroupBase):

@@ -3,16 +3,13 @@ from typing import List, Optional
 from pydantic import BaseModel
 from app.services.admin_service import AdminService
 from app.schemas.user import User, UserRole
-from app.core.security import require_role
+from app.core.security import require_role, get_current_user
 from app.core.dependencies import get_admin_service
 
 router = APIRouter(dependencies=[Depends(require_role([UserRole.ADMIN, UserRole.MANAGER]))])
 
 
 # ── Request Schemas ──────────────────────────────────
-
-class ApproveStaffRequest(BaseModel):
-    group_id: str
 
 class BrandCreateRequest(BaseModel):
     name: str
@@ -22,35 +19,78 @@ class BranchCreateRequest(BaseModel):
     name: str
     address: Optional[str] = None
 
-class GroupCreateRequest(BaseModel):
+class GroupTypeCreateRequest(BaseModel):
     branch_id: str
+    priority: int
+    label: str
+
+class GroupCreateRequest(BaseModel):
+    group_type_id: str
     name: str
+
+class CompanyUpdateRequest(BaseModel):
+    name: Optional[str] = None
+
+class FeedbackCreateRequest(BaseModel):
+    content: str
+    assignment_id: Optional[str] = None
+    branch_id: Optional[str] = None
+    target_user_id: Optional[str] = None
 
 
 # ── Staff Management ─────────────────────────────────
 
 @router.get("/staff/pending", response_model=List[User])
-async def get_pending_staff(service: AdminService = Depends(get_admin_service)):
-    return await service.get_pending_staff()
+async def get_pending_staff(
+    current_user: User = Depends(get_current_user),
+    service: AdminService = Depends(get_admin_service),
+):
+    return await service.get_pending_staff(current_user.company_id)
 
 @router.patch("/staff/{user_id}/approve", response_model=User)
-async def approve_staff(user_id: str, body: ApproveStaffRequest, service: AdminService = Depends(get_admin_service)):
-    return await service.approve_staff(user_id, body.group_id)
+async def approve_staff(user_id: str, service: AdminService = Depends(get_admin_service)):
+    return await service.approve_staff(user_id)
 
 @router.patch("/staff/{user_id}/reject", response_model=User)
 async def reject_staff(user_id: str, service: AdminService = Depends(get_admin_service)):
     return await service.reject_staff(user_id)
 
 
-# ── Organization: Brands ─────────────────────────────
+# ── Company ──────────────────────────────────────────
+
+@router.get("/company")
+async def get_company(
+    current_user: User = Depends(get_current_user),
+    service: AdminService = Depends(get_admin_service),
+):
+    return await service.get_company(current_user.company_id)
+
+@router.patch("/company")
+async def update_company(
+    body: CompanyUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    service: AdminService = Depends(get_admin_service),
+):
+    data = body.model_dump(exclude_unset=True)
+    return await service.update_company(current_user.company_id, data)
+
+
+# ── Brands ───────────────────────────────────────────
 
 @router.get("/brands")
-async def list_brands(service: AdminService = Depends(get_admin_service)):
-    return await service.list_brands()
+async def list_brands(
+    current_user: User = Depends(get_current_user),
+    service: AdminService = Depends(get_admin_service),
+):
+    return await service.list_brands(current_user.company_id)
 
 @router.post("/brands", status_code=201)
-async def create_brand(body: BrandCreateRequest, service: AdminService = Depends(get_admin_service)):
-    return await service.create_brand({"name": body.name})
+async def create_brand(
+    body: BrandCreateRequest,
+    current_user: User = Depends(get_current_user),
+    service: AdminService = Depends(get_admin_service),
+):
+    return await service.create_brand({"company_id": current_user.company_id, "name": body.name})
 
 @router.patch("/brands/{brand_id}")
 async def update_brand(brand_id: str, body: BrandCreateRequest, service: AdminService = Depends(get_admin_service)):
@@ -59,10 +99,10 @@ async def update_brand(brand_id: str, body: BrandCreateRequest, service: AdminSe
 @router.delete("/brands/{brand_id}")
 async def delete_brand(brand_id: str, service: AdminService = Depends(get_admin_service)):
     await service.delete_brand(brand_id)
-    return {"message": "브랜드가 삭제되었습니다."}
+    return {"message": "Brand deleted."}
 
 
-# ── Organization: Branches ───────────────────────────
+# ── Branches ─────────────────────────────────────────
 
 @router.get("/branches")
 async def list_branches(brand_id: Optional[str] = None, service: AdminService = Depends(get_admin_service)):
@@ -75,14 +115,30 @@ async def create_branch(body: BranchCreateRequest, service: AdminService = Depen
 @router.delete("/branches/{branch_id}")
 async def delete_branch(branch_id: str, service: AdminService = Depends(get_admin_service)):
     await service.delete_branch(branch_id)
-    return {"message": "지점이 삭제되었습니다."}
+    return {"message": "Branch deleted."}
 
 
-# ── Organization: Groups ─────────────────────────────
+# ── Group Types ──────────────────────────────────────
 
-@router.get("/groups")
-async def list_groups(branch_id: Optional[str] = None, service: AdminService = Depends(get_admin_service)):
-    return await service.list_groups(branch_id)
+@router.get("/branches/{branch_id}/group-types")
+async def list_group_types(branch_id: str, service: AdminService = Depends(get_admin_service)):
+    return await service.list_group_types(branch_id)
+
+@router.post("/group-types", status_code=201)
+async def create_group_type(body: GroupTypeCreateRequest, service: AdminService = Depends(get_admin_service)):
+    return await service.create_group_type(body.model_dump())
+
+@router.delete("/group-types/{group_type_id}")
+async def delete_group_type(group_type_id: str, service: AdminService = Depends(get_admin_service)):
+    await service.delete_group_type(group_type_id)
+    return {"message": "Group type deleted."}
+
+
+# ── Groups ───────────────────────────────────────────
+
+@router.get("/group-types/{group_type_id}/groups")
+async def list_groups(group_type_id: str, service: AdminService = Depends(get_admin_service)):
+    return await service.list_groups(group_type_id)
 
 @router.post("/groups", status_code=201)
 async def create_group(body: GroupCreateRequest, service: AdminService = Depends(get_admin_service)):
@@ -91,22 +147,27 @@ async def create_group(body: GroupCreateRequest, service: AdminService = Depends
 @router.delete("/groups/{group_id}")
 async def delete_group(group_id: str, service: AdminService = Depends(get_admin_service)):
     await service.delete_group(group_id)
-    return {"message": "그룹이 삭제되었습니다."}
+    return {"message": "Group deleted."}
 
 
-# ── Checklist Templates ──────────────────────────────
+# ── Checklist Templates ─────────────────────────────
 
 @router.post("/checklist-templates", status_code=201)
-async def create_template(data: dict, service: AdminService = Depends(get_admin_service)):
+async def create_template(
+    data: dict,
+    current_user: User = Depends(get_current_user),
+    service: AdminService = Depends(get_admin_service),
+):
+    data["company_id"] = current_user.company_id
     return await service.create_checklist_template(data)
 
 @router.get("/checklist-templates")
 async def list_templates(
-    brand_id: Optional[str] = None,
-    group_id: Optional[str] = None,
+    branch_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
     service: AdminService = Depends(get_admin_service),
 ):
-    return await service.list_checklist_templates(brand_id, group_id)
+    return await service.list_checklist_templates(current_user.company_id, branch_id)
 
 
 # ── Dashboard ────────────────────────────────────────
@@ -121,14 +182,22 @@ async def get_compliance(branch_id: str, date: str, service: AdminService = Depe
 @router.get("/feedbacks")
 async def list_feedbacks(
     target_user_id: Optional[str] = None,
-    task_id: Optional[str] = None,
+    assignment_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
     service: AdminService = Depends(get_admin_service),
 ):
-    return await service.list_feedbacks({
+    return await service.list_feedbacks(current_user.company_id, {
         "target_user_id": target_user_id,
-        "task_id": task_id,
+        "assignment_id": assignment_id,
     })
 
 @router.post("/feedbacks", status_code=201)
-async def create_feedback(data: dict, service: AdminService = Depends(get_admin_service)):
+async def create_feedback(
+    body: FeedbackCreateRequest,
+    current_user: User = Depends(get_current_user),
+    service: AdminService = Depends(get_admin_service),
+):
+    data = body.model_dump()
+    data["company_id"] = current_user.company_id
+    data["author_id"] = current_user.id
     return await service.create_feedback(data)

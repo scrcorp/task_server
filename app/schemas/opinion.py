@@ -4,13 +4,13 @@ from datetime import datetime
 
 class Opinion(BaseModel):
     id: str
+    company_id: str
     user_id: str
     content: str
-    status: str = "submitted"  # submitted, reviewed, resolved
+    status: str = "submitted"
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    class Config: from_attributes = True
 
 
 class OpinionCreate(BaseModel):
