@@ -5,7 +5,14 @@
       "mcp__ide__getDiagnostics",
       "Bash(.venv/bin/pip install:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(python:*)",
+      "Bash(.venv/bin/python:*)",
+      "Bash(grep -i db|sql|migration|supabase)",
+      "Bash(git status:*)",
+      "Bash(lsof:*)",
+      "Bash(curl:*)"
     ]
   }
 }

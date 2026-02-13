@@ -1,7 +1,16 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-02-13T05:50:00.000Z",
-  "activeFeatures": ["email-verification", "storage", "notification-channel"],
+  "lastUpdated": "2026-02-13T08:07:44.085Z",
+  "activeFeatures": [
+    "email-verification",
+    "storage",
+    "notification-channel",
+    "core",
+    "task_server",
+    "endpoints",
+    "repositories",
+    "auth_service.py"
+  ],
   "primaryFeature": "notification-channel",
   "features": {
     "email-verification": {
@@ -73,6 +82,71 @@
         "started": "2026-02-13T05:10:00.000Z",
         "lastUpdated": "2026-02-13T05:50:00.000Z"
       }
+    },
+    "core": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-13T05:34:38.220Z",
+        "lastUpdated": "2026-02-13T06:09:08.574Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/core/config.py"
+    },
+    "task_server": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-13T06:09:14.173Z",
+        "lastUpdated": "2026-02-13T06:26:44.754Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/main.py"
+    },
+    "endpoints": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-13T06:26:33.000Z",
+        "lastUpdated": "2026-02-13T08:07:44.085Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/api/endpoints/auth.py"
+    },
+    "repositories": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-13T07:40:57.402Z",
+        "lastUpdated": "2026-02-13T08:07:06.093Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/repositories/auth.py"
+    },
+    "auth_service.py": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-13T08:07:17.426Z",
+        "lastUpdated": "2026-02-13T08:07:27.192Z"
+      },
+      "lastFile": "/Users/jm/development/projects/scr/task_server/app/services/auth_service.py"
     }
   },
   "pipeline": {
@@ -83,7 +157,7 @@
   "session": {
     "startedAt": "2026-02-13T10:00:00.000Z",
     "onboardingCompleted": true,
-    "lastActivity": "2026-02-13T05:50:00.000Z"
+    "lastActivity": "2026-02-13T08:07:44.085Z"
   },
   "history": [
     {
@@ -167,6 +241,192 @@
       "phase": "check",
       "action": "completed",
       "matchRate": 100
+    },
+    {
+      "timestamp": "2026-02-13T05:34:38.220Z",
+      "feature": "core",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T05:36:00.464Z",
+      "feature": "core",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T05:36:01.460Z",
+      "feature": "core",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T06:09:08.575Z",
+      "feature": "core",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T06:09:14.173Z",
+      "feature": "task_server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T06:26:33.000Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T06:26:40.624Z",
+      "feature": "task_server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T06:26:44.754Z",
+      "feature": "task_server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T06:27:35.080Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T06:27:40.160Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T06:28:57.228Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T07:40:57.402Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T07:40:58.216Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T07:40:59.230Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T07:41:03.196Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T07:58:23.297Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T07:58:36.972Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T07:58:40.182Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T07:58:42.173Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T07:58:43.933Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T07:58:46.551Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T07:58:48.450Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T07:58:50.541Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T07:58:52.661Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T08:06:58.866Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T08:07:06.093Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T08:07:17.426Z",
+      "feature": "auth_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T08:07:27.192Z",
+      "feature": "auth_service.py",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T08:07:31.144Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T08:07:37.774Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-13T08:07:44.085Z",
+      "feature": "endpoints",
+      "phase": "do",
+      "action": "updated"
     }
   ]
 }
