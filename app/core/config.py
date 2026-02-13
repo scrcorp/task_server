@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_FROM_EMAIL: str = ""
-    SMTP_FROM_NAME: str = "Task Server"
+    SMTP_FROM_NAME: str = "TaskManager"
 
     # Email verification (6-digit OTP)
     EMAIL_VERIFY_CODE_EXPIRE_MINUTES: int = 10
