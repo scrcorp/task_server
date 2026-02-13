@@ -37,7 +37,7 @@ class ChecklistTemplateRepository(IChecklistTemplateRepository):
             .maybe_single()
             .execute()
         )
-        return res.data
+        return res.data if res else None
 
     async def create_template(self, data: dict) -> dict:
         items = data.pop("items", [])

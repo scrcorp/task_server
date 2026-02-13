@@ -29,7 +29,7 @@ class VerifyEmailRequest(BaseModel):
     email: EmailStr
     code: str
 
-class ResendVerificationRequest(BaseModel):
+class SendVerificationRequest(BaseModel):
     email: EmailStr
 
 
@@ -57,6 +57,8 @@ async def signup(body: SignupRequest, service: AuthService = Depends(get_auth_se
         return await service.signup(user_data, company_code=body.company_code)
     except Exception as e:
         msg = str(e)
+        if "not verified" in msg.lower():
+            raise HTTPException(status_code=400, detail=msg)
         if "already" in msg.lower() or "duplicate" in msg.lower() or "taken" in msg.lower():
             raise HTTPException(status_code=400, detail=msg)
         if "company code" in msg.lower():
@@ -99,19 +101,17 @@ async def verify_email(
         raise HTTPException(status_code=400, detail="Invalid or expired verification code.")
 
 
-@router.post("/resend-verification")
-async def resend_verification(
-    body: ResendVerificationRequest,
+@router.post("/send-verification")
+async def send_verification(
+    body: SendVerificationRequest,
     service: AuthService = Depends(get_auth_service),
 ):
     try:
-        return await service.resend_verification_email(body.email)
+        return await service.send_verification_email(body.email)
     except Exception as e:
         msg = str(e)
         if "too many" in msg.lower():
             raise HTTPException(status_code=429, detail=msg)
-        if "already verified" in msg.lower():
+        if "already registered" in msg.lower():
             raise HTTPException(status_code=400, detail=msg)
-        if "no account" in msg.lower():
-            raise HTTPException(status_code=404, detail=msg)
         raise HTTPException(status_code=500, detail="Failed to send verification email.")

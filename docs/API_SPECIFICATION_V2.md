@@ -68,11 +68,74 @@
 
 ---
 
+### POST `/auth/send-verification` — Send Verification Code
+
+| Item | Value |
+|------|-------|
+| Auth | Not required |
+
+> **회원가입 전** 이메일 인증용. 계정이 없는 상태에서 호출.
+
+**Request Body**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response** `200 OK`
+```json
+{ "message": "Verification code sent." }
+```
+
+**Errors**
+| Code | Detail |
+|------|--------|
+| 400 | `"Email is already registered."` |
+| 429 | `"Too many requests. Please try again later."` |
+| 500 | `"Failed to send verification email."` |
+
+> Rate limit: 동일 이메일 1시간 내 최대 5회. 6자리 숫자 코드, 유효기간 10분.
+
+---
+
+### POST `/auth/verify-email` — Verify Email with 6-digit Code
+
+| Item | Value |
+|------|-------|
+| Auth | Not required |
+
+> 발송된 인증 코드 검증. 성공 시 해당 이메일은 "인증 완료" 상태가 되어 회원가입 가능.
+
+**Request Body**
+```json
+{
+  "email": "user@example.com",
+  "code": "123456"
+}
+```
+
+**Response** `200 OK`
+```json
+{ "message": "Email verified successfully." }
+```
+
+**Errors**
+| Code | Detail |
+|------|--------|
+| 400 | `"Invalid or expired verification code."` |
+| 429 | `"Too many requests. Please try again later."` |
+
+---
+
 ### POST `/auth/signup` — Sign Up
 
 | Item | Value |
 |------|-------|
 | Auth | Not required |
+| Prerequisite | Email must be verified via `/auth/send-verification` + `/auth/verify-email` |
+
+> **이메일 인증 완료 후에만 호출 가능.** 인증되지 않은 이메일로 가입 시 400 에러.
 
 **Request Body**
 ```json
@@ -89,7 +152,7 @@
 **Response** `201 Created`
 ```json
 {
-  "message": "Signup successful. A 6-digit verification code has been sent to your email.",
+  "message": "Signup successful.",
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "user": {
@@ -105,6 +168,7 @@
 **Errors**
 | Code | Detail |
 |------|--------|
+| 400 | `"Email is not verified. Please verify your email first."` |
 | 400 | `"Login ID is already taken."` |
 | 400 | `"Email is already registered."` |
 | 400 | `"Invalid company code: {code}"` |
@@ -161,57 +225,35 @@
 
 ---
 
-### POST `/auth/verify-email` — Verify Email with 6-digit Code
-
-| Item | Value |
-|------|-------|
-| Auth | Not required |
-
-**Request Body**
-```json
-{
-  "email": "user@example.com",
-  "code": "123456"
-}
-```
-
-**Response** `200 OK`
-```json
-{ "message": "Email verified successfully." }
-```
-
-**Errors**
-| Code | Detail |
-|------|--------|
-| 400 | `"Invalid or expired verification code."` |
-| 429 | `"Too many requests. Please try again later."` |
-
 ---
 
-### POST `/auth/resend-verification` — Resend Verification Code
+### Auth Flow (회원가입 인증 플로우)
 
-| Item | Value |
-|------|-------|
-| Auth | Not required |
-
-**Request Body**
-```json
-{
-  "email": "user@example.com"
-}
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     회원가입 플로우                                │
+│                                                                  │
+│  Step 1: 이메일 인증 요청                                         │
+│  POST /auth/send-verification  { email }                         │
+│  → 6자리 인증 코드 이메일 발송 (유효기간 10분)                       │
+│                                                                  │
+│  Step 2: 인증 코드 확인                                           │
+│  POST /auth/verify-email  { email, code }                        │
+│  → 이메일 인증 완료 (email_verification_codes.used = true)         │
+│                                                                  │
+│  Step 3: 회원가입                                                 │
+│  POST /auth/signup  { email, login_id, password, ... }           │
+│  → 서버에서 이메일 인증 여부 확인 후 계정 생성                       │
+│  → status: "pending" (관리자 승인 대기)                            │
+│  → email_verified: true (가입 시점에 이미 인증 완료)                │
+│                                                                  │
+│  Step 4: 로그인 (관리자 승인 후)                                   │
+│  POST /auth/login  { login_id, password }                        │
+│  → access_token + refresh_token 발급                              │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-**Response** `200 OK`
-```json
-{ "message": "Verification code sent." }
-```
-
-**Errors**
-| Code | Detail |
-|------|--------|
-| 400 | `"Email is already verified."` |
-| 404 | `"No account found with this email."` |
-| 429 | `"Too many requests. Please try again later."` |
+> **핵심:** 이메일 인증은 회원가입 **이전**에 진행. 계정이 없는 상태에서 이메일 유효성을 먼저 검증한 뒤 가입을 진행함.
 
 ---
 
@@ -1340,6 +1382,12 @@ All errors follow FastAPI's standard format:
 | Endpoint | Code | Detail |
 |----------|------|--------|
 | Login | 401 | `"Invalid login ID or password."` |
+| Send Verification | 400 | `"Email is already registered."` |
+| Send Verification | 429 | `"Too many requests. Please try again later."` |
+| Send Verification | 500 | `"Failed to send verification email."` |
+| Verify Email | 400 | `"Invalid or expired verification code."` |
+| Verify Email | 429 | `"Too many requests. Please try again later."` |
+| Signup | 400 | `"Email is not verified. Please verify your email first."` |
 | Signup | 400 | `"Login ID is already taken."` |
 | Signup | 400 | `"Email is already registered."` |
 | Signup | 400 | `"Invalid company code: {code}"` |

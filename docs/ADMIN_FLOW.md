@@ -36,15 +36,28 @@
 
 ## 1. 관리자 인증
 
-> 관리자 계정은 앱 가입이 아닌 시스템에서 직접 생성.
+> 관리자 계정은 앱 가입이 아닌 시스템에서 직접 생성 (`POST /setup/init`).
 > Staff 앱의 `/auth/login`을 공유하되, role 기반으로 접근 권한 분리.
 
 | API | Method | 설명 |
 |-----|--------|------|
+| `/setup/init` | POST | 시스템 초기화 (회사 + 관리자 계정 생성) |
 | `/auth/login` | POST | 공용 로그인 (response에 role 포함) |
 | `/auth/me` | GET | 현재 사용자 정보 (role: manager/admin) |
 
 > `/api/v1/admin/*` 엔드포인트는 role이 `manager` 또는 `admin`인 경우만 접근 가능.
+
+### Staff 회원가입 플로우 (참고)
+
+```
+Staff 회원가입은 이메일 인증을 먼저 진행한 후 가입:
+
+1. POST /auth/send-verification  → 인증 코드 이메일 발송
+2. POST /auth/verify-email       → 인증 코드 확인
+3. POST /auth/signup             → 계정 생성 (status: pending)
+4. 관리자가 /admin/staff/{id}/approve 로 승인
+5. Staff 로그인 가능
+```
 
 ---
 

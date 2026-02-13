@@ -20,7 +20,7 @@ class DailyChecklistRepository(IDailyChecklistRepository):
 
     async def get_by_id(self, id: str) -> Optional[dict]:
         res = supabase.table(self.table).select("*").eq("id", id).maybe_single().execute()
-        return res.data
+        return res.data if res else None
 
     async def list_by_branch_date(self, branch_id: str, date: str) -> List[dict]:
         res = (
@@ -42,7 +42,7 @@ class DailyChecklistRepository(IDailyChecklistRepository):
             .maybe_single()
             .execute()
         )
-        return res.data
+        return res.data if res else None
 
     async def create(self, data: dict) -> dict:
         res = supabase.table(self.table).insert(data).execute()

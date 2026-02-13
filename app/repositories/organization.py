@@ -55,11 +55,11 @@ class OrganizationRepository(IOrganizationRepository):
     # ── Company ─────────────────────────────────────
     async def get_company_by_id(self, id: str) -> Optional[Company]:
         res = supabase.table("companies").select("*").eq("id", id).maybe_single().execute()
-        return Company(**res.data) if res.data else None
+        return Company(**res.data) if res and res.data else None
 
     async def get_company_by_code(self, code: str) -> Optional[Company]:
         res = supabase.table("companies").select("*").eq("code", code).maybe_single().execute()
-        return Company(**res.data) if res.data else None
+        return Company(**res.data) if res and res.data else None
 
     async def create_company(self, data: dict) -> Company:
         res = supabase.table("companies").insert(data).execute()

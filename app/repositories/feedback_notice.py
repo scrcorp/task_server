@@ -66,7 +66,7 @@ class NoticeRepository(INoticeRepository):
             .maybe_single()
             .execute()
         )
-        return res.data
+        return res.data if res else None
 
     async def create_notice(self, data: dict) -> dict:
         res = supabase.table("notices").insert(data).execute()

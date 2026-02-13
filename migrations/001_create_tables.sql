@@ -114,7 +114,7 @@ CREATE INDEX idx_users_status     ON users(status);
 -- ============================================================
 CREATE TABLE email_verification_codes (
     id          uuid            PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id     uuid            NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id     uuid            REFERENCES users(id) ON DELETE CASCADE,
     email       varchar(255)    NOT NULL,
     code        varchar(6)      NOT NULL,
     expires_at  timestamptz     NOT NULL,

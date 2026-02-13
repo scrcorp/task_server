@@ -45,12 +45,17 @@ class AuthService:
         if not company:
             raise Exception(f"Invalid company code: {company_code}")
 
-        # 2. Check duplicate login_id / email
+        # 2. Check email is verified
+        verified = await self.auth_repo.is_email_verified(data.email)
+        if not verified:
+            raise Exception("Email is not verified. Please verify your email first.")
+
+        # 3. Check duplicate login_id / email
         dup = await self.auth_repo.check_duplicate(data.login_id, data.email)
         if dup:
             raise Exception(dup)
 
-        # 3. Hash password and create profile
+        # 4. Hash password and create account
         profile_data = {
             "id": str(uuid.uuid4()),
             "email": data.email,
@@ -61,29 +66,16 @@ class AuthService:
             "role": data.role.value,
             "status": data.status.value,
             "language": data.language,
-            "email_verified": False,
+            "email_verified": True,
         }
         user = await self.auth_repo.sign_up(profile_data)
-
-        # 4. Generate 6-digit OTP and send verification email
-        try:
-            code = _generate_otp()
-            expires_at = datetime.now(timezone.utc) + timedelta(
-                minutes=settings.EMAIL_VERIFY_CODE_EXPIRE_MINUTES
-            )
-            await self.auth_repo.save_verification_code(
-                user["id"], data.email, code, expires_at
-            )
-            await send_verification_code(data.email, code)
-        except Exception:
-            pass  # SMTP may not be configured yet
 
         # 5. Issue tokens
         access_token = create_access_token(user["id"])
         refresh_token = create_refresh_token(user["id"])
 
         return {
-            "message": "Signup successful. A 6-digit verification code has been sent to your email.",
+            "message": "Signup successful.",
             "access_token": access_token,
             "refresh_token": refresh_token,
             "user": {
@@ -115,33 +107,29 @@ class AuthService:
             raise Exception("Invalid or expired verification code.")
         # Mark code as used
         await self.auth_repo.mark_verification_code_used(record["id"])
-        # Set email_verified = true on user profile
-        await self.auth_repo.verify_email(record["user_id"])
         return {"message": "Email verified successfully."}
 
-    async def resend_verification_email(self, email: str) -> dict:
+    async def send_verification_email(self, email: str) -> dict:
         # Rate limiting: max 5 codes per hour
         since = datetime.now(timezone.utc) - timedelta(hours=1)
         count = await self.auth_repo.count_recent_codes(email, since)
         if count >= 5:
             raise Exception("Too many requests. Please try again later.")
 
-        # Find user by email
+        # Check if email is already registered
         user = await self.auth_repo.get_user_by_email(email)
-        if not user:
-            raise Exception("No account found with this email.")
-        if user.get("email_verified"):
-            raise Exception("Email is already verified.")
+        if user:
+            raise Exception("Email is already registered.")
 
         # Invalidate previous codes
         await self.auth_repo.invalidate_previous_codes(email)
 
-        # Generate and save new code
+        # Generate and save new code (no user_id yet)
         code = _generate_otp()
         expires_at = datetime.now(timezone.utc) + timedelta(
             minutes=settings.EMAIL_VERIFY_CODE_EXPIRE_MINUTES
         )
-        await self.auth_repo.save_verification_code(user["id"], email, code, expires_at)
+        await self.auth_repo.save_verification_code(email, code, expires_at)
         await send_verification_code(email, code)
 
         return {"message": "Verification code sent."}

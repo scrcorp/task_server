@@ -34,7 +34,7 @@ class AssignmentRepository(IAssignmentRepository):
             .maybe_single()
             .execute()
         )
-        return res.data
+        return res.data if res else None
 
     async def list(self, filters: dict) -> List[dict]:
         query = supabase.table(self.table).select("*, assignees:assignment_assignees(*)")

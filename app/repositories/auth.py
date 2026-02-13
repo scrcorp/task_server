@@ -40,8 +40,12 @@ class IAuthRepository(ABC):
 
     @abstractmethod
     async def save_verification_code(
-        self, user_id: str, email: str, code: str, expires_at: datetime
+        self, email: str, code: str, expires_at: datetime, user_id: str = None
     ) -> dict:
+        pass
+
+    @abstractmethod
+    async def is_email_verified(self, email: str) -> bool:
         pass
 
     @abstractmethod
@@ -97,7 +101,7 @@ class CustomAuthRepository(IAuthRepository):
             .maybe_single()
             .execute()
         )
-        return res.data
+        return res.data if res else None
 
     async def get_user_by_login_id(self, login_id: str) -> Optional[dict]:
         res = (
@@ -107,7 +111,7 @@ class CustomAuthRepository(IAuthRepository):
             .maybe_single()
             .execute()
         )
-        return res.data
+        return res.data if res else None
 
     async def get_user_by_email(self, email: str) -> Optional[dict]:
         res = (
@@ -117,7 +121,7 @@ class CustomAuthRepository(IAuthRepository):
             .maybe_single()
             .execute()
         )
-        return res.data
+        return res.data if res else None
 
     async def update_password(self, user_id: str, new_password_hash: str) -> bool:
         self.client.table(self.table).update(
@@ -150,23 +154,31 @@ class CustomAuthRepository(IAuthRepository):
     # -- Verification code methods --
 
     async def save_verification_code(
-        self, user_id: str, email: str, code: str, expires_at: datetime
+        self, email: str, code: str, expires_at: datetime, user_id: str = None
     ) -> dict:
-        res = (
-            self.client.table(self.codes_table)
-            .insert(
-                {
-                    "user_id": user_id,
-                    "email": email,
-                    "code": code,
-                    "expires_at": expires_at.isoformat(),
-                }
-            )
-            .execute()
-        )
+        data = {
+            "email": email,
+            "code": code,
+            "expires_at": expires_at.isoformat(),
+        }
+        if user_id:
+            data["user_id"] = user_id
+        res = self.client.table(self.codes_table).insert(data).execute()
         if not res.data:
             raise Exception("Failed to save verification code.")
         return res.data[0]
+
+    async def is_email_verified(self, email: str) -> bool:
+        """Check if email has a used verification code (verified before signup)."""
+        res = (
+            self.client.table(self.codes_table)
+            .select("id", count="exact")
+            .eq("email", email)
+            .eq("used", True)
+            .limit(1)
+            .execute()
+        )
+        return (res.count or 0) > 0
 
     async def get_valid_verification_code(
         self, email: str, code: str

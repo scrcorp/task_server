@@ -42,7 +42,7 @@ class AttendanceRepository(IAttendanceRepository):
             .maybe_single()
             .execute()
         )
-        return res.data
+        return res.data if res else None
 
     async def get_history(self, user_id: str, company_id: str, year: int, month: int) -> List[dict]:
         start = f"{year}-{month:02d}-01T00:00:00"

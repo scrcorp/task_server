@@ -65,6 +65,15 @@
 **경로:** `/signup` (4단계 위자드)
 
 > 가입 시 role은 항상 `staff`. 관리자 승인 후 로그인 가능.
+>
+> **핵심:** 이메일 인증을 회원가입 **이전**에 진행. 계정이 없는 상태에서 이메일 유효성을 먼저 검증.
+
+```
+[Step 1: 약관 동의] → [Step 2: 이메일 인증] → [Step 3: 정보 입력] → [Step 4: 가입 완료]
+                         │                                              │
+                    send-verification                               signup
+                    verify-email                              (이메일 인증 여부 확인)
+```
 
 ### Step 1: 약관 동의
 - UI에서 체크박스 3개 체크
@@ -74,20 +83,24 @@
 
 | 사용자 액션 | API | Method | Body | Response |
 |------------|-----|--------|------|----------|
-| "인증번호 보내기" 탭 | `/auth/send-verification` | POST | `{ email }` | `{ message }` |
-| 인증번호 입력 후 "인증" 탭 | `/auth/verify-code` | POST | `{ email, code }` | `{ verified: bool }` |
+| "인증번호 보내기" 탭 | `/auth/send-verification` | POST | `{ "email": "user@example.com" }` | `{ "message": "Verification code sent." }` |
+| 인증번호 입력 후 "인증" 탭 | `/auth/verify-email` | POST | `{ "email": "user@example.com", "code": "123456" }` | `{ "message": "Email verified successfully." }` |
+
+> **에러 처리:**
+> - `send-verification` 400: `"Email is already registered."` → 이미 가입된 이메일
+> - `send-verification` 429: `"Too many requests."` → 1시간 내 5회 초과
+> - `verify-email` 400: `"Invalid or expired verification code."` → 코드 오류 또는 만료 (10분)
 
 ### Step 3: 정보 입력
 
-| 사용자 액션 | API | Method | Body | Response |
-|------------|-----|--------|------|----------|
-| "중복 확인" 탭 | `/auth/check-id` | POST | `{ login_id }` | `{ available: bool }` |
+- login_id, password, full_name, company_code, language 입력
+- (login_id 중복 확인은 signup API에서 처리)
 
 ### Step 4: 가입 완료
 
 | 사용자 액션 | API | Method | Body | Response |
 |------------|-----|--------|------|----------|
-| Step 3 → 4 전환 시 | `/auth/signup` | POST | 아래 참조 | `201 { user }` |
+| "가입" 버튼 탭 | `/auth/signup` | POST | 아래 참조 | `201 { message, access_token, refresh_token, user }` |
 
 ```json
 {
@@ -95,11 +108,18 @@
   "login_id": "hong123",
   "password": "password123",
   "full_name": "홍길동",
-  "branch_id": "uuid",
+  "company_code": "SCR",
   "language": "ko"
 }
 ```
 
+> **서버 동작:**
+> 1. 이메일 인증 여부 확인 (`email_verification_codes` 테이블에서 `used=true` 레코드 존재 여부)
+> 2. 미인증 시 400: `"Email is not verified. Please verify your email first."`
+> 3. login_id/email 중복 확인
+> 4. 계정 생성 (`email_verified: true`, `status: pending`)
+> 5. access_token + refresh_token 발급
+>
 > role은 서버에서 강제로 `staff` 설정. status는 `pending` (관리자 승인 대기).
 
 **가입 완료 안내:** "관리자가 승인한 이후 계정을 사용할 수 있어요." → 로그인 화면으로
@@ -370,10 +390,9 @@
 
 | # | Method | Endpoint | 설명 | Phase |
 |---|--------|----------|------|-------|
-| 12 | POST | `/auth/signup` | 회원가입 (role=staff 고정) | 2 |
-| 13 | POST | `/auth/send-verification` | 이메일 인증번호 발송 | 2 |
-| 14 | POST | `/auth/verify-code` | 인증번호 확인 | 2 |
-| 15 | POST | `/auth/check-id` | ID 중복 확인 | 2 |
+| 12 | POST | `/auth/signup` | 회원가입 (role=staff 고정, 이메일 인증 필수) | 2 |
+| 13 | POST | `/auth/send-verification` | 이메일 인증번호 발송 (가입 전) | 2 |
+| 14 | POST | `/auth/verify-email` | 인증번호 확인 | 2 |
 | 16 | POST | `/auth/logout` | 로그아웃 | 1 |
 | 17 | POST | `/tasks/{id}/comments` | 업무 댓글 작성 | 1 |
 | 18 | GET | `/feedbacks/unread-count` | 미확인 피드백 수 | 1 |

@@ -10,13 +10,13 @@ class SupabaseUserRepository(IRepository[User]):
 
     async def get_by_id(self, id: str) -> Optional[User]:
         res = supabase.table(self.table).select("*").eq("id", id).maybe_single().execute()
-        if res.data:
+        if res and res.data:
             return User(**res.data)
         return None
 
     async def get_by_login_id(self, login_id: str) -> Optional[User]:
         res = supabase.table(self.table).select("*").eq("login_id", login_id).maybe_single().execute()
-        if res.data:
+        if res and res.data:
             return User(**res.data)
         return None
 
